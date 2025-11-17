@@ -10,13 +10,13 @@ This repository centralizes reusable workflows, GitHub Actions, Copilot integrat
 - Release and distribution tooling  
 - Common scripts for iOS and Android builds  
 
+## Purpose
+ Provide a single source of truth for mobile delivery—consistent builds, predictable releases, automated quality checks, and standardized tooling across teams.
+ 
 ## How to Use
 Reference any shared workflow or action directly in your mobile repositories:
 
 ```yaml
-uses: org/mobile-cicd/.github/actions/copilot-cli-prompt@main ```
+uses: org/mobile-cicd/.github/actions/copilot-cli-prompt@main
+```
 
-## Purpose
- Provide a single source of truth for mobile delivery—consistent builds, predictable releases, automated quality checks, and standardized tooling across teams.
-## License
-Internal use only.
