@@ -17,6 +17,6 @@ This repository centralizes reusable workflows, GitHub Actions, Copilot integrat
 Reference any shared workflow or action directly in your mobile repositories:
 
 ```yaml
-uses: org/mobile-cicd/.github/actions/copilot-cli-prompt@main
+uses: sitoo/mobile-shared-cicd/.github/actions/copilot-cli-prompt@main
 ```
 

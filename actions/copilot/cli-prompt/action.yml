@@ -54,7 +54,7 @@ runs:
         OUTPUT_FILE="${{ inputs.output-file }}"
         TIMEOUT="${{ inputs.timeout }}"
 
-        bash ".github/scripts/run_copilot_risk_analysis.sh" \
+        bash "./scripts/run_copilot.sh" \
           -p "$PROMPT_TEXT" \
           -o "$OUTPUT_FILE" \
           -t "$TIMEOUT"
