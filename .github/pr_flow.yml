@@ -1,0 +1,25 @@
+name: PR YAML & Action Linter
+permissions:
+  contents: read
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Run yamllint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: '.'
+          config_file: '.yamllint.yml'
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2.0.1
