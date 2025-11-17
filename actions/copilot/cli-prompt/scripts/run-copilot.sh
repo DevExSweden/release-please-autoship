@@ -35,26 +35,45 @@ if [[ -z "${PROMPT_TEXT}" || -z "${OUTPUT_FILE}" ]]; then
   exit 2
 fi
 
+# Marker + instructions we inject into the prompt to be able to extract the final report content
+MARKER="**********"
+
+MARKER_INSTRUCTIONS=$'\n\n## OUTPUT FORMAT (STRICT)\n\n'\
+'1. You must follow this output format strictly in addition to the prompt text.\n'\
+'2. First, output exactly this line on its own line:\n'\
+"${MARKER}"$'\n'\
+'3. Do NOT repeat the marker line anywhere else.\n'
+
+PROMPT_TEXT_WITH_MARKER="${PROMPT_TEXT}${MARKER_INSTRUCTIONS}"
+
 # Require authentication token for Copilot CLI
 : "${GITHUB_TOKEN:?Error: GITHUB_TOKEN is not set. Copilot CLI authentication requires GITHUB_TOKEN.}"
 
 # Forward termination signals to child processes
 trap 'trap - SIGTERM SIGINT; kill -s SIGTERM -- -$$ 2>/dev/null || true' SIGTERM SIGINT
 
+RAW_FILE="${OUTPUT_FILE}.raw"
+
 set +e
 timeout --foreground --signal=TERM --kill-after=30s "${TIMEOUT_DURATION}" \
-  copilot -p "${PROMPT_TEXT}" \
+  copilot -p "${PROMPT_TEXT_WITH_MARKER}" \
     --allow-tool 'shell(git)' \
     --deny-tool 'write' \
-    > "${OUTPUT_FILE}" \
+    > "${RAW_FILE}" \
     2> >(tee /dev/stderr)
 EXIT_CODE=$?
 set -e
 
-#clean up the output file from agent steps
-RAW_FILE="${OUTPUT_FILE}.raw"
-sed '/^● /d;/^✓ /d;/^[[:space:]]*\$/d;/^[[:space:]]*↪ /d' "${RAW_FILE}" > "${OUTPUT_FILE}"
-rm -f "${RAW_FILE}"
+# Clean output: keep only lines AFTER the marker
+if grep -qxF "${MARKER}" "${RAW_FILE}"; then
+  awk -v marker="${MARKER}" '
+    $0 == marker { found=1; next }
+    found
+  ' "${RAW_FILE}" > "${OUTPUT_FILE}"
+else
+  echo "Warning: marker '"${MARKER}"' not found in Copilot output. Using full raw output." >&2
+  cp "${RAW_FILE}" "${OUTPUT_FILE}"
+fi
 
 # Write step output for GitHub Actions if available
 if [[ -n "${GITHUB_OUTPUT:-}" && -f "${OUTPUT_FILE}" ]]; then
