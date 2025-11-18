@@ -13,7 +13,7 @@ Runs GitHub Copilot CLI using provided prompt text and writes the output to a fi
 
 ## Usage
 ```yaml
-uses: org/mobile-cicd/actions/copilot/cli-prompt@main
+uses: sitoo/mobile-cicd/actions/copilot/cli-prompt@main
 with:
   prompt-text: "Analyze the PR and summarize risk."
   output-file: "copilot-report.md"
