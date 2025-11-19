@@ -1,0 +1,85 @@
+name: Copilot Release Notes
+
+on:
+  workflow_call:
+    inputs:
+      prompt-text:
+        description: "Full Copilot prompt text"
+        required: true
+        type: string
+      output-file:
+        description: "File name for the generated notes (e.g. copilot-varner-release-notes.md)"
+        required: true
+        type: string
+      artifact-name:
+        description: "Name of the uploaded artifact (logical name in Actions UI)"
+        required: true
+        type: string
+      slack-title: 
+        description: "Title of the Slack message"
+        required: true
+        type: string
+        default: "Notes for Sitoo Public release"
+    secrets:
+      COPILOT_CI_PAT:
+        required: true
+      SLACK_WEBHOOK_URL:
+        required: true
+      
+permissions:
+  contents: read
+
+jobs:
+  copilot-release-notes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5.0.1
+        with:
+          fetch-depth: 0 
+
+      - name: Run Copilot for release notes
+        id: copilot
+        uses: ./.github/actions/copilot-cli-prompt
+        with:
+          prompt-text: ${{ inputs.prompt-text }}
+          output-file: ${{ inputs.output-file }}
+          github-token: ${{ secrets.COPILOT_CI_PAT }}
+          timeout: "600s"
+
+      - name: Upload release notes artifact
+        if: always()
+        id: upload_release_notes
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.output-file }}
+          if-no-files-found: error
+
+      - name: Build artifact URL
+        id: artifact_url
+        run: |
+          BASE_URL="${{ github.server_url }}/${{ github.repository }}"
+          RUN_PATH="/actions/runs/${{ github.run_id }}/artifacts"
+          ARTIFACT_ID="${{ steps.upload_release_notes.outputs.artifact-id }}"
+          ARTIFACT_URL="${BASE_URL}${RUN_PATH}/${ARTIFACT_ID}"
+          echo "url=${ARTIFACT_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack with release notes link
+        if: always()
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          payload: |
+            {
+              "text": ":robot_face: *${{ inputs.slack-title }}*\n" +
+                      "*Repo:* `${{ github.repository }}`\n" +
+                      "*Tag:* `${{ github.ref_name }}`\n" +
+                      "*Run:* #${{ github.run_number }}\n" +
+                      "*Artifact:* `${{ inputs['artifact-name'] }}`\n" +
+                      "*URL:* ${{ steps.artifact_url.outputs.url }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+ 
