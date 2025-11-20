@@ -47,12 +47,11 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
+        PROMPT_TEXT: ${{ inputs.prompt-text }}
+        OUTPUT_FILE: ${{ inputs.output-file }}
+        TIMEOUT: ${{ inputs.timeout }}
       run: |
         set -euo pipefail
-
-        PROMPT_TEXT="${{ inputs.prompt-text }}"
-        OUTPUT_FILE="${{ inputs.output-file }}"
-        TIMEOUT="${{ inputs.timeout }}"
 
         bash "${{ github.action_path }}/scripts/run-copilot.sh" \
           -p "$PROMPT_TEXT" \
