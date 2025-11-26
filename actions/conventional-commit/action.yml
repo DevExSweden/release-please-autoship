@@ -40,7 +40,7 @@ runs:
           echo "Please update the PR title to follow Conventional Commits."
           echo
           echo "- Allowed types: feat, fix, docs, test, ci, refactor, perf, chore, revert, security, wip"
-          echo "- Ticket key (when required) must match: \`(POSS|PS|BUGS|COM|PROM)-\\d{2,5}\`"
+          echo "- Ticket key (when required) must match: \`(POSS|PS|BUGS|COM|PROM|APPE)-\\d{2,5}\`"
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Fail job when validation fails
