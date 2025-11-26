@@ -10,7 +10,7 @@ runs:
     - name: Validate Conventional Commits
       id: validate
       continue-on-error: true
-      uses: ytanikin/pr-conventional-commits@05b6c51a991169e3ae3fad39cde73d6bae7285ec
+      uses: ytanikin/pr-conventional-commits@b628c5a234cc32513014b7bfdd1e47b532124d98
       with:
         task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert","security","wip"]'
         custom_labels: >-
