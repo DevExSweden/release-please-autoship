@@ -1,0 +1,53 @@
+name: Conventional Commit
+description: Validate a commit message against the Conventional Commit specification.
+inputs:
+  app-token:
+    description: The token to use to create the comment and label the PR.
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate Conventional Commits
+      id: validate
+      continue-on-error: true
+      uses: ytanikin/pr-conventional-commits@b628c5a
+      with:
+        task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert","security","wip"]'
+        custom_labels: >-
+          {"feat": "feature", "fix": "fix", "docs": "documentation",
+           "test": "test", "ci": "CI/CD", "refactor": "refactor",
+           "perf": "performance", "chore": "chore", "revert": "revert",
+           "wip": "WIP"}
+        add_scope_label: 'true'
+        token: ${{ inputs.app-token }}
+
+    - name: Enforce Ticket Key
+      id: enforce-ticket-key
+      continue-on-error: true
+      shell: bash
+      env:
+        GITHUB_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        bash ${GITHUB_ACTION_PATH}/scripts/enforce_ticket_key.sh "${{ github.event.pull_request.title }}"
+        
+    - name: Report Conventional Commit failure
+      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outcome == 'failure'
+      shell: bash
+      run: |
+        {
+          echo "## Conventional Commit validation failed."
+          echo
+          echo "Please update the PR title to follow Conventional Commits."
+          echo
+          echo "- Allowed types: feat, fix, docs, test, ci, refactor, perf, chore, revert, security, wip"
+          echo "- Ticket key (when required) must match: \`(POSS|PS|BUGS|COM|PROM|APPE)-\\d{2,5}\`"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Fail job when validation fails
+      shell: bash
+      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outcome == 'failure'
+      run: |
+        echo "Failing job because Conventional Commit or ticket validation failed."
+        exit 1
+
+      
