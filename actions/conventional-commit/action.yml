@@ -18,7 +18,6 @@ runs:
            "test": "test", "ci": "CI/CD", "refactor": "refactor",
            "perf": "performance", "chore": "chore", "revert": "revert",
            "wip": "WIP"}
-        add_scope_label: 'true'
         token: ${{ inputs.app-token }}
 
     - name: Enforce Ticket Key
