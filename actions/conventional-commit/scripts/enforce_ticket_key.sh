@@ -8,7 +8,7 @@ fi
 
 PR_TITLE="$1"
 
-# Fixed ticket pattern: POSS-123, PS-456, BUGS-789, COM-42, PROM-1337
+# Allowed ticket pattern: POSS-123, PS-456, BUGS-789, COM-42, PROM-1337
 TICKET_KEY_PATTERN='(POSS|PS|BUGS|COM|PROM|APPE)-[0-9]{2,5}'
 
 TYPE_PART="${PR_TITLE%%:*}"     
