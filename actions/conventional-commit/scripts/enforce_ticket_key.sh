@@ -25,7 +25,7 @@ case "$TYPE" in feat|fix|perf|security|refactor)
       exit 0
     else
       echo "❌ Missing valid ticket key in PR title."
-      echo "Expected something like: POSS-123, PS-456, BUGS-789, COM-42, PROM-1337"
+      echo "Expected something like: POSS-123, PS-456, BUGS-789, COM-42, PROM-1337, APPE-100"
       exit 1
     fi
     ;;
