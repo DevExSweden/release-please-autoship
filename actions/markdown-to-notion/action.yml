@@ -1,0 +1,15 @@
+name: "Markdown → Notion Blocks"
+description: "Convert Markdown text into Notion block objects."
+
+inputs:
+  markdown:
+    description: "The Markdown content to convert"
+    required: true
+
+outputs:
+  blocks_json:
+    description: "JSON-encoded Notion block array"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
