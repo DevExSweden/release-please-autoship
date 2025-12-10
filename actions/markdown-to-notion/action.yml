@@ -5,6 +5,9 @@ inputs:
   markdown:
     description: "The Markdown content to convert"
     required: true
+  markdown_path:
+    description: "The path to the Markdown file to convert"
+    required: false
 
 outputs:
   blocks_json:
