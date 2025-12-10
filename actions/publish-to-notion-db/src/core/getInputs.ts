@@ -10,8 +10,6 @@ export default function getInputs(core: CoreLike): Inputs {
   const propertiesJson = core.getInput('properties_json') || '';
   const body = core.getInput('body') || '';
   const bodyType = core.getInput('body_type') || 'notion_blocks_json';
-  console.log('bodyType', bodyType);
-  console.log('body', body);
 
   let properties: Record<string, unknown> = {};
   if (propertiesJson.trim().length > 0) {
