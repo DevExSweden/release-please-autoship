@@ -1,0 +1,28 @@
+{
+    "name": "markdown-to-notion-action",
+    "version": "1.0.0",
+    "private": true,
+    "description": "GitHub Action that converts Markdown into Notion block objects",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "npx ncc build src/index.ts -o dist",
+        "watch": "npx tsc -w",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:ci": "vitest run --coverage"
+    },
+    "dependencies": {
+        "@actions/core": "^1.11.1",
+        "@notionhq/client": "^2.2.15",
+        "remark-parse": "^11.0.0",
+        "unified": "^11.0.5"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.1",
+        "@types/unist": "^3.0.3",
+        "@vercel/ncc": "^0.38.3",
+        "typescript": "^5.6.3",
+        "vitest": "^4.0.15"
+    }
+}

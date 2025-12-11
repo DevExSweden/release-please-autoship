@@ -24,6 +24,9 @@ inputs:
   slack-channel:
     description: "Slack channel to post the release notes to"
     required: true
+  artifact-name:
+    description: "Name of the uploaded release notes artifact"
+    required: true
 
 outputs:
   artifact-url:
@@ -66,7 +69,7 @@ runs:
         INPUT_PREVIOUS_TAG: ${{ inputs.previous-tag || '' }}
       with:
         prompt-text: ${{ steps.load_prompt.outputs.content }}
-        output-file: ${{ inputs.target-name }}-release-notes.md
+        output-file: ${{ inputs.artifact-name }}.md
         github-token: ${{ inputs.github-token }}
         timeout: "600s"
 
@@ -75,8 +78,8 @@ runs:
       id: upload_release_notes
       uses: actions/upload-artifact@v5
       with:
-        name: ${{ inputs.target-name }}-release-notes
-        path: ${{ inputs.target-name }}-release-notes.md
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.artifact-name }}.md
         if-no-files-found: error
 
     - name: Build artifact URL

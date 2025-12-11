@@ -1,0 +1,31 @@
+name: "Publish to Notion Database"
+description: "Create a Notion page in a database with arbitrary properties and content"
+
+inputs:
+  notion_token:
+    description: "Notion integration token"
+    required: true
+  notion_database_id:
+    description: "Target Notion database ID"
+    required: true
+
+  title_property_name:
+    description: "Name of the Notion title property (e.g. 'Name', 'Version')"
+    required: true
+  title:
+    description: "Title value for the page"
+    required: true
+  properties_json:
+    description: "JSON string of additional Notion properties (excluding the title property)"
+    required: false
+  body:
+    description: "Page content body"
+    required: true
+  body_type:
+    description: "How to render body: 'paragraph' or 'notion_blocks_json'"
+    required: false
+    default: "notion_blocks_json"
+
+runs:
+  using: "node24"
+  main: "dist/index.js"
