@@ -1,0 +1,20 @@
+name: External Event from n8n
+
+on:
+  repository_dispatch:
+    types: [notify]
+
+permissions:
+  contents: read
+
+jobs:
+  handle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect payload
+        run: |
+          echo "Event type: ${{ github.event.action }}"
+          echo "Payload:"
+          echo '${{ toJson(github.event.client_payload) }}'
+          echo "Page ID: ${{ github.event.client_payload.page_id }}"
+          echo "Page Name: ${{ github.event.client_payload.page_name }}"
