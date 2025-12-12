@@ -1,28 +1,20 @@
-name: External Event Handler
+name: External Event from n8n
 
 on:
-  workflow_dispatch:
-    inputs:
-      page_id:
-        description: "The ID of the page to handle"
-        required: true
-      page_name:
-        description: "The name of the page to handle"
-        required: true
   repository_dispatch:
-    types: [external-event]
+    types: [notify]
+
+permissions:
+  contents: read
 
 jobs:
-  handle-external:
-    if: github.event_name == 'repository_dispatch'
+  handle:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-           echo "Payload: ${{ toJson(github.event.client_payload) }}"
-  handle-manual:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-           echo "Page ID: ${{ inputs.page_id }}"
-           echo "Page Name: ${{ inputs.page_name }}"
+      - name: Inspect payload
+        run: |
+          echo "Event type: ${{ github.event.action }}"
+          echo "Payload:"
+          echo '${{ toJson(github.event.client_payload) }}'
+          echo "Page ID: ${{ github.event.client_payload.page_id }}"
+          echo "Page Name: ${{ github.event.client_payload.page_name }}"
