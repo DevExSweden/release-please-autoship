@@ -1,0 +1,32 @@
+name: "Slack Upload File"
+description: "Upload a file to Slack using files.uploadV2."
+
+inputs:
+  slack_token:
+    description: "Slack bot token with files:write and chat:write scopes."
+    required: true
+  channel_id:
+    description: "Slack channel ID (e.g., C123..., not the channel name)."
+    required: true
+  file_path:
+    description: "Path to the file to upload."
+    required: true
+  file_name:
+    description: "Optional display filename on Slack. Defaults to basename(file_path)."
+    required: false
+  initial_comment:
+    description: "Optional initial message text attached to the file."
+    required: false
+  title:
+    description: "Optional title for the file."
+    required: false
+
+outputs:
+  file_id:
+    description: "The Slack file ID."
+  permalink:
+    description: "Permalink to the uploaded file."
+
+runs:
+  using: "node24"
+  main: "dist/index.js"

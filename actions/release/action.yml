@@ -63,7 +63,7 @@ runs:
 
     - name: Run Copilot for release notes
       id: copilot
-      uses: sitoo/mobile-shared-cicd/actions/copilot/cli-prompt@simplify_workflow
+      uses: sitoo/mobile-shared-cicd/actions/copilot/cli-prompt@main
       env:
         INPUT_CURRENT_TAG: ${{ inputs.current-tag || '' }}
         INPUT_PREVIOUS_TAG: ${{ inputs.previous-tag || '' }}

@@ -10,6 +10,7 @@ permissions:
 jobs:
   handle:
     runs-on: ubuntu-latest
+    if: github.event.action == 'notify'
     steps:
       - name: Inspect payload
         run: |
@@ -18,3 +19,31 @@ jobs:
           echo '${{ toJson(github.event.client_payload) }}'
           echo "Page ID: ${{ github.event.client_payload.page_id }}"
           echo "Page Name: ${{ github.event.client_payload.page_name }}"
+
+      - name: Install Playwright Chromium
+        run: |
+          npx --yes playwright install --with-deps chromium
+
+      - name: Convert Notion page to PDF
+        id: convert-notion-page
+        uses: sitoo/mobile-shared-cicd/actions/notion-to-pdf@main
+        with:
+          notion_token: ${{ secrets.NOTION_TOKEN }}
+          page_id: "${{ github.event.client_payload.page_id }}"
+          page_name: "${{ github.event.client_payload.page_name }}"
+   
+      - name: Upload release notes PDF to artifact
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: release-notes-pdf
+          path: ${{ steps.convert-notion-page.outputs.pdf_path }}
+
+      - name: Upload PDF to Slack
+        uses: sitoo/mobile-shared-cicd/actions/slack-upload-file@main
+        with:
+          slack_token: ${{ secrets.POS_RELEASE_NOTES_TOKEN }}
+          channel_id: ${{ vars.RELEASE_NOTES_SLACK_CHANNEL }}
+          file_path: ${{ steps.convert-notion-page.outputs.pdf_path }}
+          file_name: ${{ steps.convert-notion-page.outputs.pdf_file_name }}
+          initial_comment: PDF attached for ${{ steps.convert-notion-page.outputs.page_title }}
+        
