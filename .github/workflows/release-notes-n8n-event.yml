@@ -1,0 +1,28 @@
+name: External Event Handler
+
+on:
+  workflow_dispatch:
+    inputs:
+      page_id:
+        description: "The ID of the page to handle"
+        required: true
+      page_name:
+        description: "The name of the page to handle"
+        required: true
+  repository_dispatch:
+    types: [external-event]
+
+jobs:
+  handle-external:
+    if: github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+           echo "Payload: ${{ toJson(github.event.client_payload) }}"
+  handle-manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+           echo "Page ID: ${{ inputs.page_id }}"
+           echo "Page Name: ${{ inputs.page_name }}"
