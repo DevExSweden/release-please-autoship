@@ -1,0 +1,27 @@
+{
+    "name": "notion-to-pdf",
+    "version": "1.0.0",
+    "private": true,
+    "description": "GitHub Action that exports a Notion page to a PDF file",
+    "main": "dist/index.js",
+    "license": "MIT",
+    "scripts": {
+        "build": "npx ncc build src/index.ts -o dist",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "dependencies": {
+        "@actions/core": "^1.11.1",
+        "@notionhq/client": "^2.2.15",
+        "playwright-core": "^1.49.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.1",
+        "@vercel/ncc": "^0.38.3",
+        "typescript": "^5.6.3",
+        "vitest": "^4.0.15"
+    }
+}
+
+

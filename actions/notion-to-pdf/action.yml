@@ -1,0 +1,17 @@
+name: "Notion Page → PDF"
+description: "Download a Notion page and convert it to a PDF."
+
+inputs:
+  notion_token:
+    description: "Notion integration token."
+    required: true
+  page_id:
+    description: "The Notion page ID to export."
+    required: true
+  page_name:
+    description: "The display name of the page (used for PDF title and filename)."
+    required: true
+
+runs:
+  using: "node20"
+  main: "dist/index.js"

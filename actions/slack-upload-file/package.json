@@ -1,0 +1,23 @@
+{
+    "name": "slack-upload-file",
+    "version": "1.0.0",
+    "private": true,
+    "description": "GitHub Action that uploads a file to Slack using files.uploadV2",
+    "main": "dist/index.js",
+    "license": "MIT",
+    "scripts": {
+        "build": "npx ncc build src/index.ts -o dist",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@actions/core": "^1.11.1",
+        "@slack/web-api": "^7.3.4"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.1",
+        "@vercel/ncc": "^0.38.4",
+        "typescript": "^5.6.3"
+    }
+}
+
+

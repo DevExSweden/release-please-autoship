@@ -67,3 +67,10 @@ jobs:
           cd actions/publish-to-notion-db
           npm ci
           npm test
+          
+      - name: Test notion-to-pdf action
+        if: steps.changes.outputs.notion_to_pdf == 'true'
+        run: |
+          cd actions/notion-to-pdf
+          npm ci
+          npm test
