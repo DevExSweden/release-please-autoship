@@ -1,0 +1,146 @@
+name: Copilot Create Release Notes Workflow
+
+on:
+  workflow_call:
+    inputs:
+      current_tag:
+        description: "Current release tag (optional)"
+        required: false
+        type: string
+      previous_tag:
+        description: "Previous release tag (optional)"
+        required: false
+        type: string
+      platform:
+        description: "Platform (iOS or Android)"
+        required: true
+        type: string
+    secrets:
+      COPILOT_CI_PAT:
+        required: true
+      POS_RELEASE_BOT_TOKEN:
+        required: true
+      NOTION_RELEASE_API_TOKEN:
+        required: true
+      NOTION_RELEASE_NOTES_DB:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  generate-release-notes:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - name: sitoo
+            context: "Release Notes for Sitoo Public"
+            channel: "test-release-tmp"
+            audience: "Sitoo Public"
+            artifact-name: "release-notes-sitoo-public"
+          - name: varner
+            context: "Release Notes for Varner"
+            channel: "test-release-tmp"
+            audience: "Varner"
+            artifact-name: "release-notes-varner"
+
+    steps:
+      - name: Create current tag
+        id: current_tag
+        run: |
+          if [ -n "${{ inputs.current_tag }}" ]; then
+            echo "current_tag=${{ inputs.current_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "current_tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -n "${{ inputs.previous_tag }}" ]; then
+            echo "previous_tag=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: sitoo/mobile-shared-cicd/actions/release@main
+        id: release_notes
+        with:
+          current-tag: ${{ steps.current_tag.outputs.current_tag }}
+          previous-tag: ${{ steps.current_tag.outputs.previous_tag }}
+          target-name: ${{ matrix.target.name }}
+          github-token: ${{ secrets.COPILOT_CI_PAT }}
+          slack-token: ${{ secrets.POS_RELEASE_BOT_TOKEN }}
+          slack-channel: ${{ matrix.target.channel }}
+          slack-title: ${{ matrix.target.context }}
+          artifact-name: ${{ matrix.target.artifact-name }}
+
+      - name: Get current time
+        id: now
+        run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
+      - name: Download the release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.target.artifact-name }}
+          path: ./release-notes/
+
+      - name: Read release notes content
+        id: read_notes
+        run: |
+          file=$(ls ./release-notes/*.md | head -n 1)
+          echo "file=$file"
+          {
+            echo "body<<EOF"
+            cat "$file"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Convert Markdown to Notion blocks
+        id: notion_blocks
+        uses: sitoo/mobile-shared-cicd/actions/markdown-to-notion@main
+        with:
+          markdown: ${{ steps.read_notes.outputs.body }}
+
+      - name: Publish to Notion DB
+        uses: sitoo/mobile-shared-cicd/actions/publish-to-notion-db@main
+        with:
+          notion_token: ${{ secrets.NOTION_RELEASE_API_TOKEN }}
+          notion_database_id: ${{ secrets.NOTION_RELEASE_NOTES_DB }}
+          title_property_name: "Name"
+          title: "${{ steps.current_tag.outputs.current_tag }} Release Notes"
+
+          properties_json: >
+            {
+              "Version": {
+                "rich_text": [
+                  {
+                    "type": "text",
+                    "text": { "content": "${{ steps.current_tag.outputs.current_tag }}" }
+                  }
+                ]
+              },
+              "Created At": {
+                "date": { "start": "${{ steps.now.outputs.now }}" }
+              },
+              "GitHub URL": {
+                "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              },
+              "Platform": {
+                "select": { "name": "${{ inputs.platform }}" }
+              },
+              "Target": {
+                "select": { "name": "${{ matrix.target.audience }}" }
+              },
+              "Status": {
+                "select": { "name": "Draft" }
+              },
+              "Commit Hash": {
+                "rich_text": [
+                  {
+                    "type": "text",
+                    "text": {
+                      "content": "${{ github.sha }}"
+                    }
+                  }
+                ]
+              }
+            }
+          body: ${{ steps.notion_blocks.outputs.blocks_json }}
+
