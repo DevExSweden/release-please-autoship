@@ -5,8 +5,8 @@ updates:
     schedule:
       interval: weekly
     groups:
-    actions:
-      patterns: ["*"]
+      actions:
+        patterns: ["*"]
 
   - package-ecosystem: npm
     directory: /actions/markdown-to-notion
