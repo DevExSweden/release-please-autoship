@@ -50,13 +50,13 @@ jobs:
         id: current_tag
         run: |
           if [ -n "${{ inputs.current_tag }}" ]; then
-            echo "current_tag=${{ inputs.current_tag }}" >> $GITHUB_OUTPUT
+            echo "current_tag=${{ inputs.current_tag }}" >> "$GITHUB_OUTPUT"
           else
-            echo "current_tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "current_tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
           
           if [ -n "${{ inputs.previous_tag }}" ]; then
-            echo "previous_tag=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
+            echo "previous_tag=${{ inputs.previous_tag }}" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: sitoo/mobile-shared-cicd/actions/release@main
@@ -73,7 +73,7 @@ jobs:
 
       - name: Get current time
         id: now
-        run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+        run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Download the release artifact
         uses: actions/download-artifact@v4
@@ -84,7 +84,7 @@ jobs:
       - name: Read release notes content
         id: read_notes
         run: |
-          file=$(ls ./release-notes/*.md | head -n 1)
+          file=$(find ./release-notes -name "*.md" -type f | head -n 1)
           echo "file=$file"
           {
             echo "body<<EOF"
