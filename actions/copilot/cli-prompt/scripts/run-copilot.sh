@@ -42,7 +42,8 @@ MARKER_INSTRUCTIONS=$'\n\n## OUTPUT FORMAT (STRICT)\n\n'\
 '1. You must follow this output format strictly in addition to the prompt text.\n'\
 '2. First, output exactly this line on its own line:\n'\
 "${MARKER}"$'\n'\
-'3. Do NOT repeat the marker line anywhere else.\n'
+'3. At the very end of your output, output exactly the same marker line again on its own line.\n'\
+'4. Do NOT output the marker line anywhere else.\n'
 
 PROMPT_TEXT_WITH_MARKER="${PROMPT_TEXT}${MARKER_INSTRUCTIONS}"
 
@@ -64,11 +65,15 @@ timeout --foreground --signal=TERM --kill-after=30s "${TIMEOUT_DURATION}" \
 EXIT_CODE=$?
 set -e
 
-# Clean output: keep only lines AFTER the marker
+# Clean output: keep only lines BETWEEN the first and second marker (or everything after the first if second is missing)
 if grep -qxF "${MARKER}" "${RAW_FILE}"; then
   awk -v marker="${MARKER}" '
-    $0 == marker { found=1; next }
-    found
+    $0 == marker {
+      if (found) { exit }   # second marker: stop printing
+      found=1               # first marker: start printing
+      next
+    }
+    found { print }
   ' "${RAW_FILE}" > "${OUTPUT_FILE}"
 else
   echo "Warning: marker '"${MARKER}"' not found in Copilot output. Using full raw output." >&2
