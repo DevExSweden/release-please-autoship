@@ -21,8 +21,8 @@ Rules:
    If INPUT_PREVIOUS_TAG is non-empty, PREVIOUS_TAG = INPUT_PREVIOUS_TAG.
 
 2. If the input values above are empty or invalid, infer from Git:
-   - Use the most recent tag matching "*-production" as CURRENT_TAG.
-   - Use the production tag immediately before it as PREVIOUS_TAG.
+   - Use the most recent tag matching "*-beta" as CURRENT_TAG.
+   - Use the beta tag immediately before it as PREVIOUS_TAG.
 
 3. Never compare branches or untagged commits. Always produce the diff for:
    PREVIOUS_TAG...CURRENT_TAG
