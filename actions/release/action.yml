@@ -5,10 +5,6 @@ inputs:
   target-name:
     description: "Name of the target (e.g. sitoo, varner)"
     required: true
-  slack-title:
-    description: "Title of the Slack message"
-    required: false
-    default: "Notes for Sitoo Public release"
   current-tag:
     description: "Current tag"
     required: true
@@ -18,15 +14,10 @@ inputs:
   github-token:
     description: "PAT with copilot-requests scope for Copilot CLI"
     required: true
-  slack-token:
-    description: "Slack Incoming Webhook Token"
-    required: true
-  slack-channel:
-    description: "Slack channel to post the release notes to"
-    required: true
   artifact-name:
     description: "Name of the uploaded release notes artifact"
     required: true
+  
 
 outputs:
   artifact-url:
@@ -94,33 +85,3 @@ runs:
         ARTIFACT_URL="${BASE_URL}${RUN_PATH}/${ARTIFACT_ID}"
 
         echo "url=${ARTIFACT_URL}" >> "$GITHUB_OUTPUT"
-
-    - name: Notify Slack with release notes link
-      if: always()
-      uses: slackapi/slack-github-action@v2.1.1
-      with:
-        method: chat.postMessage
-        token: ${{ inputs.slack-token }}
-        payload: |
-          {
-              "channel": "${{ inputs.slack-channel }}",
-              "text": ":robot_face: ${{ inputs.slack-title }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":robot_face: *${{ inputs.slack-title }}*"
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    { "type": "mrkdwn", "text": "*Repo:*\n`${{ github.repository }}`" },
-                    { "type": "mrkdwn", "text": "*Run:*\n#${{ github.run_number }}" },
-                    { "type": "mrkdwn", "text": "*Artifact:*\n`${{ inputs.target-name }}-release-notes`" },
-                    { "type": "mrkdwn", "text": "*URL:*\n${{ steps.artifact_url.outputs.url }}" }
-                  ]
-                }
-              ]
-          }

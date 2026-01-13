@@ -29,25 +29,14 @@ permissions:
   contents: read
 
 jobs:
-  generate-release-notes:
+  determine-tags:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - name: sitoo
-            context: "Release Notes for Sitoo Public"
-            channel: "test-release-tmp"
-            audience: "Sitoo Public"
-            artifact-name: "release-notes-sitoo-public"
-          - name: varner
-            context: "Release Notes for Varner"
-            channel: "test-release-tmp"
-            audience: "Varner"
-            artifact-name: "release-notes-varner"
-
+    outputs:
+      current_tag: ${{ steps.tags.outputs.current_tag }}
+      previous_tag: ${{ steps.tags.outputs.previous_tag }}
     steps:
-      - name: Create current tag
-        id: current_tag
+      - name: Determine current and previous tags
+        id: tags
         run: |
           if [ -n "${{ inputs.current_tag }}" ]; then
             echo "current_tag=${{ inputs.current_tag }}" >> "$GITHUB_OUTPUT"
@@ -59,16 +48,29 @@ jobs:
             echo "previous_tag=${{ inputs.previous_tag }}" >> "$GITHUB_OUTPUT"
           fi
 
+  generate-release-notes:
+    needs: determine-tags
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - name: sitoo
+            context: "Release Notes for Sitoo Public"
+            audience: "Sitoo Public"
+            artifact-name: "release-notes-sitoo-public"
+          - name: varner
+            context: "Release Notes for Varner"
+            audience: "Varner"
+            artifact-name: "release-notes-varner"
+
+    steps:
       - uses: sitoo/mobile-shared-cicd/actions/release@main
         id: release_notes
         with:
-          current-tag: ${{ steps.current_tag.outputs.current_tag }}
-          previous-tag: ${{ steps.current_tag.outputs.previous_tag }}
+          current-tag: ${{ needs.determine-tags.outputs.current_tag }}
+          previous-tag: ${{ needs.determine-tags.outputs.previous_tag }}
           target-name: ${{ matrix.target.name }}
           github-token: ${{ secrets.COPILOT_CI_PAT }}
-          slack-token: ${{ secrets.POS_RELEASE_BOT_TOKEN }}
-          slack-channel: ${{ matrix.target.channel }}
-          slack-title: ${{ matrix.target.context }}
           artifact-name: ${{ matrix.target.artifact-name }}
 
       - name: Get current time
@@ -104,7 +106,7 @@ jobs:
           notion_token: ${{ secrets.NOTION_RELEASE_API_TOKEN }}
           notion_database_id: ${{ secrets.NOTION_RELEASE_NOTES_DB }}
           title_property_name: "Name"
-          title: "${{ steps.current_tag.outputs.current_tag }} Release Notes"
+          title: "${{ needs.determine-tags.outputs.current_tag }} Release Notes"
 
           properties_json: >
             {
@@ -112,7 +114,7 @@ jobs:
                 "rich_text": [
                   {
                     "type": "text",
-                    "text": { "content": "${{ steps.current_tag.outputs.current_tag }}" }
+                    "text": { "content": "${{ needs.determine-tags.outputs.current_tag }}" }
                   }
                 ]
               },
@@ -143,3 +145,88 @@ jobs:
               }
             }
           body: ${{ steps.notion_blocks.outputs.blocks_json }}
+
+  notify-slack:
+    needs: [determine-tags, generate-release-notes]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack with release notes link
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.POS_RELEASE_BOT_TOKEN }}
+          payload: |
+            {
+                "channel": ${{vars.RELEASE_NOTES_SLACK_CHANNEL}},
+                "text": ":white_check_mark: Release Notes ready for review",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": ":white_check_mark: *Release Notes Ready for Review*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "fields": [
+                      { "type": "mrkdwn", "text": "*Version:*\n`${{ needs.determine-tags.outputs.current_tag }}`" },
+                      { "type": "mrkdwn", "text": "*Platform:*\n`${{ inputs.platform }}`" },
+                      { "type": "mrkdwn", "text": "*Repository:*\n`${{ github.repository }}`" },
+                      { "type": "mrkdwn", "text": "*Notion:*\n<${{ vars.RELEASE_NOTES_URL }}|View Release Notes>" }
+                    ]
+                  },
+                  {
+                    "type": "context",
+                    "elements": [
+                      {
+                        "type": "mrkdwn",
+                        "text": "Workflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_id }}>"
+                      }
+                    ]
+                  }
+                ]
+            }
+
+  notify-slack-failure:
+    if: failure()
+    needs: [determine-tags, generate-release-notes]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on failure
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.POS_RELEASE_BOT_TOKEN }}
+          payload: |
+            {
+                "channel": "${{ vars.RELEASE_NOTES_SLACK_CHANNEL }}",
+                "text": ":x: Release Notes generation failed for ${{ needs.determine-tags.outputs.current_tag }}",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": ":x: *Release Notes Generation Failed*"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "fields": [
+                      { "type": "mrkdwn", "text": "*Version:*\n`${{ needs.determine-tags.outputs.current_tag }}`" },
+                      { "type": "mrkdwn", "text": "*Platform:*\n`${{ inputs.platform }}`" },
+                      { "type": "mrkdwn", "text": "*Repository:*\n`${{ github.repository }}`" },
+                      { "type": "mrkdwn", "text": "*Status:*\n:warning: Failed" }
+                    ]
+                  },
+                  {
+                    "type": "context",
+                    "elements": [
+                      {
+                        "type": "mrkdwn",
+                        "text": "Workflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_id }}>"
+                      }
+                    ]
+                  }
+                ]
+            }
