@@ -1,0 +1,52 @@
+name: "Slack Status Notification"
+description: "Build a Slack notification payload with status-based formatting"
+
+inputs:
+  status:
+    description: "Job/workflow status (success|failure|cancelled)"
+    required: true
+  channel:
+    description: "Slack channel ID or name"
+    required: true
+  success-title:
+    description: "Title to show on success"
+    required: true
+  failure-title:
+    description: "Title to show on failure"
+    required: true
+  fields:
+    description: "Fields to include in the message (JSON object with key-value pairs)"
+    required: true
+  success-footer:
+    description: "Footer message to show on success"
+    required: false
+    default: ""
+  failure-footer:
+    description: "Footer message to show on failure"
+    required: false
+    default: ""
+  output-file:
+    description: "Path to output JSON file"
+    required: false
+    default: "slack_payload.json"
+
+outputs:
+  payload-file:
+    description: "Path to the generated payload file"
+    value: ${{ inputs.output-file }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build Slack payload
+      shell: bash
+      run: |
+        "${{ github.action_path }}/scripts/build-notification.sh" \
+          "${{ inputs.status }}" \
+          "${{ inputs.channel }}" \
+          "${{ inputs.success-title }}" \
+          "${{ inputs.failure-title }}" \
+          '${{ inputs.fields }}' \
+          "${{ inputs.success-footer }}" \
+          "${{ inputs.failure-footer }}" \
+          "${{ inputs.output-file }}"

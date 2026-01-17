@@ -1,0 +1,121 @@
+name: Reusable Prepare Release Branch
+
+on:
+  workflow_call:
+    inputs:
+      target_branch:
+        description: "Branch to prepare release from (e.g. develop)"
+        required: true
+        type: string
+
+      version_file_path:
+        description: "Path to file containing the version"
+        required: true
+        type: string
+
+      version_key:
+        description: "Key to extract version (e.g. MARKETING_VERSION, VERSION_NAME)"
+        required: true
+        type: string
+
+      version_format:
+        description: "File format: xcconfig | properties | plist"
+        required: true
+        type: string
+
+      slack_channel:
+        description: "Slack channel to notify"
+        required: true
+        type: string
+
+      pos-release-bot-app-id:
+        description: "GitHub App ID for the POS Release Bot"
+        required: true
+        type: string
+
+    secrets:
+      GH_APP_PRIVATE_KEY:
+        required: true
+      SLACK_RELEASE_BOT_TOKEN:
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    if: github.ref_name == inputs.target_branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Release Please with auto-merge
+        id: release
+        uses: sitoo/mobile-shared-cicd/actions/release-please-automerge@reusable_prepare_release_branch
+        with:
+          target-branch: ${{ inputs.target_branch }}
+          github-app-id: ${{ inputs.pos-release-bot-app-id }}
+          github-app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Refresh target branch
+        run: |
+          git fetch origin
+          git checkout ${{ inputs.target_branch }}
+          git pull origin ${{ inputs.target_branch }}
+
+      - name: Extract version from repo that Release Please just bumped
+        id: version
+        uses: sitoo/mobile-shared-cicd/actions/extract-version@reusable_prepare_release_branch
+        with:
+          file-path: ${{ inputs.version_file_path }}
+          key: ${{ inputs.version_key }}
+          format: ${{ inputs.version_format }}
+
+      - name: Set version environment variables
+        run: |
+          echo "RELEASE_VERSION=${{ steps.version.outputs.version }}" >> "$GITHUB_ENV"
+          echo "RELEASE_BRANCH=release-v${{ steps.version.outputs.version }}" >> "$GITHUB_ENV"
+
+      - name: Create release branch
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          RELEASE_BRANCH="release-v$VERSION"
+
+          if git show-ref --quiet refs/remotes/origin/$RELEASE_BRANCH; then
+            echo "Release branch already exists: $RELEASE_BRANCH"
+            exit 0
+          fi
+
+          git checkout -b "$RELEASE_BRANCH"
+          git push origin "$RELEASE_BRANCH"
+          
+      - name: Build Slack payload
+        if: always()
+        uses: sitoo/mobile-shared-cicd/actions/slack-status-notification@reusable_prepare_release_branch
+        with:
+          status: ${{ job.status }}
+          channel: ${{ inputs.slack_channel }}
+          success-title: "Release Branch for v${{ steps.version.outputs.version || 'unknown' }} Ready"
+          failure-title: "Release Preparation Failed"
+          fields: |
+            {
+              "From": "${{ inputs.target_branch }}",
+              "Release Branch": "${{ job.status == 'success' && format('release-v{0}', steps.version.outputs.version) || 'not created' }}",
+              "Repository": "${{ github.repository }}",
+              "Details": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+          success-footer: "Next: Start internal beta testing"
+          failure-footer: "Action: Check the workflow run, fix issues, and retry."
+
+      - name: Notify Slack (always)
+        if: always()
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_RELEASE_BOT_TOKEN }}
+          payload-file-path: slack_payload.json
