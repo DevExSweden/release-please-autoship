@@ -1,0 +1,33 @@
+name: "Extract Version"
+description: "Extract version from various file formats (xcconfig, properties, plist)"
+
+inputs:
+  file-path:
+    description: "Path to the version file"
+    required: true
+  key:
+    description: "Key/field name to extract (e.g. MARKETING_VERSION, VERSION_NAME)"
+    required: true
+  format:
+    description: "File format: xcconfig | properties | plist"
+    required: true
+
+outputs:
+  version:
+    description: "Extracted version string"
+    value: ${{ steps.extract.outputs.version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Extract version
+      id: extract
+      shell: bash
+      run: |
+        VERSION=$("${{ github.action_path }}/scripts/extract.sh" \
+          "${{ inputs.file-path }}" \
+          "${{ inputs.key }}" \
+          "${{ inputs.format }}")
+        
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "Extracted version: $VERSION"
