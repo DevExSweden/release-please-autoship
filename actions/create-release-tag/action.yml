@@ -1,0 +1,27 @@
+name: "Create Release Tag"
+description: "Compute and create a release tag based on version and stage"
+
+inputs:
+  version:
+    description: "Release version (e.g. 1.2.3)"
+    required: true
+  mode:
+    description: "Tag mode (candidate|production)"
+    required: true
+
+outputs:
+  tag:
+    description: "Created tag name"
+    value: ${{ steps.create.outputs.tag }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create and push tag
+      id: create
+      shell: bash
+      run: |
+        "${{ github.action_path }}/scripts/create-tag.sh" \
+          "${{ inputs.version }}" \
+          "${{ inputs.mode }}"
+
