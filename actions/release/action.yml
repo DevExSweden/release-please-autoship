@@ -23,6 +23,12 @@ outputs:
   artifact-url:
     description: "URL to the uploaded release notes artifact"
     value: ${{ steps.artifact_url.outputs.url }}
+  current-sha:
+    description: "Commit SHA for the current release tag"
+    value: ${{ steps.get_shas.outputs.current_sha }}
+  base-sha:
+    description: "Commit SHA for the base (previous) release tag"
+    value: ${{ steps.get_shas.outputs.base_sha }}
 
 runs:
   using: "composite"
@@ -32,20 +38,30 @@ runs:
       with:
         fetch-depth: 0
 
-    - name: Inject tag context
+    - name: Get commit SHAs for tags
+      id: get_shas
+      shell: bash
+      run: |
+        chmod +x "${{ github.action_path }}/scripts/get_commit_shas.sh"
+        "${{ github.action_path }}/scripts/get_commit_shas.sh" \
+          "${{ inputs.current-tag }}" \
+          "${{ inputs.previous-tag }}" \
+          "${{ github.sha }}"
+
+    - name: Inject commit context
       id: load_prompt
       shell: bash
       env:
         PROMPT_FILE_PATH: ${{ github.action_path }}/prompts/${{ inputs.target-name }}-release-notes.md
-        INPUT_CURRENT_TAG: ${{ inputs.current-tag }}
-        INPUT_PREVIOUS_TAG: ${{ inputs.previous-tag }}
+        CURRENT_SHA: ${{ steps.get_shas.outputs.current_sha }}
+        BASE_SHA: ${{ steps.get_shas.outputs.base_sha }}
       run: |
         set -euo pipefail
 
         {
           echo "content<<EOF"
-          echo "INPUT_CURRENT_TAG=\"${INPUT_CURRENT_TAG:-}\""
-          echo "INPUT_PREVIOUS_TAG=\"${INPUT_PREVIOUS_TAG:-}\""
+          echo "CURRENT_COMMIT_SHA=\"${CURRENT_SHA:-}\""
+          echo "BASE_COMMIT_SHA=\"${BASE_SHA:-}\""
           printf '\n'
           cat "$PROMPT_FILE_PATH"
           printf '\n'
@@ -56,8 +72,8 @@ runs:
       id: copilot
       uses: sitoo/mobile-shared-cicd/actions/copilot/cli-prompt@main
       env:
-        INPUT_CURRENT_TAG: ${{ inputs.current-tag || '' }}
-        INPUT_PREVIOUS_TAG: ${{ inputs.previous-tag || '' }}
+        CURRENT_COMMIT_SHA: ${{ steps.get_shas.outputs.current_sha }}
+        BASE_COMMIT_SHA: ${{ steps.get_shas.outputs.base_sha }}
       with:
         prompt-text: ${{ steps.load_prompt.outputs.content }}
         output-file: ${{ inputs.artifact-name }}.md
