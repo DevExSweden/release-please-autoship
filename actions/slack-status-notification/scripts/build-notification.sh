@@ -54,4 +54,3 @@ jq -n \
   }' > "$OUTPUT_FILE"
 
 echo "Slack payload written to: $OUTPUT_FILE"
-
