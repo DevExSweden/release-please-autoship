@@ -28,7 +28,7 @@ on:
         required: true
         type: string
 
-      pos-release-bot-app-id:
+      pos_release_bot_app_id:
         description: "GitHub App ID for the POS Release Bot"
         required: true
         type: string
