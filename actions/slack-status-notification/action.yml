@@ -29,6 +29,9 @@ inputs:
     description: "Path to output JSON file"
     required: false
     default: "slack_payload.json"
+  slack-token:
+    description: "Slack bot token for posting messages"
+    required: true
 
 outputs:
   payload-file:
@@ -50,3 +53,10 @@ runs:
           "${{ inputs.success-footer }}" \
           "${{ inputs.failure-footer }}" \
           "${{ inputs.output-file }}"
+    
+    - name: Send Slack notification
+      uses: slackapi/slack-github-action@v2.1.1
+      with:
+        method: chat.postMessage
+        token: ${{ inputs.slack-token }}
+        payload-file-path: ${{ inputs.output-file }}

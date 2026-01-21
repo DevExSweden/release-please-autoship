@@ -42,7 +42,7 @@ extract_xcconfig() {
 
 extract_properties() {
   local file="$1" key="$2"
-  grep "^$key=" "$file" | cut -d= -f2
+  grep "^$key=" "$file" | cut -d= -f2 | xargs
 }
 
 extract_plist() {
@@ -74,4 +74,3 @@ if [ -z "$VERSION" ]; then
 fi
 
 echo "$VERSION"
-
