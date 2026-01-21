@@ -3,32 +3,32 @@ name: Reusable Prepare Release Branch
 on:
   workflow_call:
     inputs:
-      target_branch:
+      target-branch:
         description: "Branch to prepare release from (e.g. develop)"
         required: true
         type: string
 
-      version_file_path:
+      version-file-path:
         description: "Path to file containing the version"
         required: true
         type: string
 
-      version_key:
+      version-key:
         description: "Key to extract version (e.g. MARKETING_VERSION, VERSION_NAME)"
         required: true
         type: string
 
-      version_format:
+      version-format:
         description: "File format: xcconfig | properties | plist"
         required: true
         type: string
 
-      slack_channel:
+      slack-channel:
         description: "Slack channel to notify"
         required: true
         type: string
 
-      pos_release_bot_app_id:
+      pos-release-bot-app-id:
         description: "GitHub App ID for the POS Release Bot"
         required: true
         type: string
@@ -57,7 +57,7 @@ permissions:
 
 jobs:
   prepare-release:
-    if: github.ref_name == inputs.target_branch
+    if: github.ref_name == inputs.target-branch
     runs-on: ubuntu-latest
 
     steps:
@@ -68,10 +68,10 @@ jobs:
 
       - name: Run Release Please with auto-merge
         id: release
-        uses: sitoo/mobile-shared-cicd/actions/release-please-automerge@reusable_prepare_release_branch
+        uses: sitoo/mobile-shared-cicd/actions/release-please-automerge@main
         with:
-          target-branch: ${{ inputs.target_branch }}
-          github-app-id: ${{ inputs.pos_release_bot_app_id }}
+          target-branch: ${{ inputs.target-branch }}
+          github-app-id: ${{ inputs.pos-release-bot-app-id }}
           github-app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           config-file: ${{ inputs.config-file }}
           manifest-file: ${{ inputs.manifest-file }}
@@ -79,16 +79,16 @@ jobs:
       - name: Refresh target branch
         run: |
           git fetch origin
-          git checkout ${{ inputs.target_branch }}
-          git pull origin ${{ inputs.target_branch }}
+          git checkout ${{ inputs.target-branch }}
+          git pull origin ${{ inputs.target-branch }}
 
       - name: Extract version from repo that Release Please just bumped
         id: version
-        uses: sitoo/mobile-shared-cicd/actions/extract-version@reusable_prepare_release_branch
+        uses: sitoo/mobile-shared-cicd/actions/extract-version@main
         with:
-          file-path: ${{ inputs.version_file_path }}
-          key: ${{ inputs.version_key }}
-          format: ${{ inputs.version_format }}
+          file-path: ${{ inputs.version-file-path }}
+          key: ${{ inputs.version-key }}
+          format: ${{ inputs.version-format }}
 
       - name: Set version environment variables
         run: |
@@ -110,15 +110,15 @@ jobs:
           
       - name: Notify Slack
         if: always()
-        uses: sitoo/mobile-shared-cicd/actions/slack-status-notification@reusable_prepare_release_branch
+        uses: sitoo/mobile-shared-cicd/actions/slack-status-notification@main
         with:
           status: ${{ job.status }}
-          channel: ${{ inputs.slack_channel }}
+          channel: ${{ inputs.slack-channel }}
           success-title: "Release Branch for v${{ steps.version.outputs.version || 'unknown' }} Ready"
           failure-title: "Release Preparation Failed"
           fields: |
             {
-              "From": "${{ inputs.target_branch }}",
+              "From": "${{ inputs.target-branch }}",
               "Release Branch": "${{ job.status == 'success' && format('release-v{0}', steps.version.outputs.version) || 'not created' }}",
               "Repository": "${{ github.repository }}",
               "Details": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

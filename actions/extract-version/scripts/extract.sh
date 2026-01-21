@@ -74,4 +74,3 @@ if [ -z "$VERSION" ]; then
 fi
 
 echo "$VERSION"
-
