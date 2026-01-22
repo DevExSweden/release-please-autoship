@@ -24,4 +24,3 @@ runs:
         "${{ github.action_path }}/scripts/create-tag.sh" \
           "${{ inputs.version }}" \
           "${{ inputs.mode }}"
-
