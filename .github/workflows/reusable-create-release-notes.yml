@@ -133,12 +133,22 @@ jobs:
               "Status": {
                 "select": { "name": "Draft" }
               },
-              "Commit Hash": {
+              "Current Commit": {
                 "rich_text": [
                   {
                     "type": "text",
                     "text": {
-                      "content": "${{ github.sha }}"
+                      "content": "${{ steps.release_notes.outputs.current-sha }}"
+                    }
+                  }
+                ]
+              },
+              "Base Commit": {
+                "rich_text": [
+                  {
+                    "type": "text",
+                    "text": {
+                      "content": "${{ steps.release_notes.outputs.base-sha }}"
                     }
                   }
                 ]
