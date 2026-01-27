@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import { chromium } from "playwright-core";
+import { chromium } from "playwright";
 import { Client } from "@notionhq/client";
 import * as fs from "fs";
 import * as path from "path";
