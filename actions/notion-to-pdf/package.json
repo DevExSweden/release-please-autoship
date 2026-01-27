@@ -12,7 +12,7 @@
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@actions/core": "^1.11.1",
+        "@actions/core": "^2.0.2",
         "@notionhq/client": "^2.2.15",
         "playwright-core": "^1.49.0"
     },
