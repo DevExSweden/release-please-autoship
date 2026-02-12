@@ -1,10 +1,10 @@
-name: Reusable Prepare Release Branch
+name: Reusable Create Release Branch
 
 on:
   workflow_call:
     inputs:
       target-branch:
-        description: "Branch to prepare release from (e.g. develop)"
+        description: "Branch to create release from (e.g. develop)"
         required: true
         type: string
 
@@ -28,36 +28,15 @@ on:
         required: true
         type: string
 
-      pos-release-bot-app-id:
-        description: "GitHub App ID for the POS Release Bot"
-        required: true
-        type: string
-
-      config-file:
-        description: "Path to release-please config file"
-        required: false
-        type: string
-        default: ".github/release-please-config.json"
-
-      manifest-file:
-        description: "Path to release-please manifest file"
-        required: false
-        type: string
-        default: ".github/.release-please-manifest.json"
-
     secrets:
-      GH_APP_PRIVATE_KEY:
-        required: true
       SLACK_RELEASE_BOT_TOKEN:
         required: true
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  prepare-release:
-    if: github.ref_name == inputs.target-branch
+  create-release-branch:
     runs-on: ubuntu-latest
 
     steps:
@@ -65,22 +44,6 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Run Release Please with auto-merge
-        id: release
-        uses: sitoo/mobile-shared-cicd/actions/release-please-automerge@main
-        with:
-          target-branch: ${{ inputs.target-branch }}
-          github-app-id: ${{ inputs.pos-release-bot-app-id }}
-          github-app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          config-file: ${{ inputs.config-file }}
-          manifest-file: ${{ inputs.manifest-file }}
-          
-      - name: Refresh target branch
-        run: |
-          git fetch origin
-          git checkout ${{ inputs.target-branch }}
-          git pull origin ${{ inputs.target-branch }}
 
       - name: Extract version from repo that Release Please just bumped
         id: version
@@ -107,7 +70,7 @@ jobs:
 
           git checkout -b "$RELEASE_BRANCH"
           git push origin "$RELEASE_BRANCH"
-          
+
       - name: Notify Slack
         if: always()
         uses: sitoo/mobile-shared-cicd/actions/slack-status-notification@main
