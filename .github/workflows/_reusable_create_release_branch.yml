@@ -9,19 +9,15 @@ on:
         type: string
 
       version-file-path:
-        description: "Path to file containing the version"
+        description: "Path to the JSON version file (e.g. .github/.release-please-manifest.json)"
         required: true
         type: string
 
       version-key:
-        description: "Key to extract version (e.g. MARKETING_VERSION, VERSION_NAME)"
-        required: true
+        description: "JSON key to extract (e.g. '.')"
+        required: false
         type: string
-
-      version-format:
-        description: "File format: xcconfig | properties | plist"
-        required: true
-        type: string
+        default: "."
 
       slack-channel:
         description: "Slack channel to notify"
@@ -51,7 +47,6 @@ jobs:
         with:
           file-path: ${{ inputs.version-file-path }}
           key: ${{ inputs.version-key }}
-          format: ${{ inputs.version-format }}
 
       - name: Set version environment variables
         run: |
