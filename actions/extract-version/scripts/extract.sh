@@ -8,7 +8,7 @@
 # Arguments:
 #   file_path - Path to the version file
 #   key       - Key/field name to extract (e.g. MARKETING_VERSION, VERSION_NAME)
-#   format    - File format: xcconfig | properties | plist
+#   format    - File format: xcconfig | properties | plist | gradle-kts
 #
 # Output:
 #   Prints the extracted version to stdout
@@ -50,6 +50,11 @@ extract_plist() {
   plutil -extract "$key" raw -o - "$file"
 }
 
+extract_gradle_kts() {
+  local file="$1" key="$2"
+  grep "$key" "$file" 2>/dev/null | sed -n 's/.*["'\'']\([^"'\'']*\)["'\''].*/\1/p' | head -1 || true
+}
+
 # Extract version based on format
 case "$FORMAT" in
   xcconfig)
@@ -61,9 +66,12 @@ case "$FORMAT" in
   plist)
     VERSION=$(extract_plist "$FILE" "$KEY")
     ;;
+  gradle-kts)
+    VERSION=$(extract_gradle_kts "$FILE" "$KEY")
+    ;;
   *)
     echo "Error: Unsupported version_format: $FORMAT" >&2
-    echo "Supported formats: xcconfig, properties, plist" >&2
+    echo "Supported formats: xcconfig, properties, plist, gradle-kts" >&2
     exit 1
     ;;
 esac
