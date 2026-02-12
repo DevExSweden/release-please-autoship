@@ -1,5 +1,5 @@
 name: "Extract Version"
-description: "Extract version from various file formats (xcconfig, properties, plist)"
+description: "Extract version from various file formats (xcconfig, properties, plist, gradle-kts)"
 
 inputs:
   file-path:
@@ -9,7 +9,7 @@ inputs:
     description: "Key/field name to extract (e.g. MARKETING_VERSION, VERSION_NAME)"
     required: true
   format:
-    description: "File format: xcconfig | properties | plist"
+    description: "File format: xcconfig | properties | plist | gradle-kts"
     required: true
 
 outputs:
