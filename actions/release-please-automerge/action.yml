@@ -37,10 +37,18 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Create GitHub App token
+      id: app-token
+      uses: actions/create-github-app-token@v2.2.0
+      with:
+        app-id: ${{ inputs.github-app-id }}
+        private-key: ${{ inputs.github-app-private-key }}
+
     - name: Run Release Please
       id: release
       uses: googleapis/release-please-action@v4.4.0
       with:
+        token: ${{ steps.app-token.outputs.token }}
         target-branch: ${{ inputs.target-branch }}
         skip-github-release: true
         config-file: ${{ inputs.config-file }}
@@ -57,19 +65,11 @@ runs:
         PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
         echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
-    - name: Create GitHub App token
-      id: app-token
-      if: ${{ steps.release.outputs.prs_created == 'true' }}
-      uses: actions/create-github-app-token@v2.2.0
-      with:
-        app-id: ${{ inputs.github-app-id }}
-        private-key: ${{ inputs.github-app-private-key }}
-
     - name: Approve release PR
       if: ${{ steps.release.outputs.prs_created == 'true' }}
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        GITHUB_TOKEN: ${{ github.token }}
         PR_NUMBER: ${{ steps.pr_number.outputs.number }}
       run: |
         echo "Auto-approving PR #$PR_NUMBER"
