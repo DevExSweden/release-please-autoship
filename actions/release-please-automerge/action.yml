@@ -51,8 +51,10 @@ runs:
       id: pr_number
       if: ${{ steps.release.outputs.prs_created == 'true' }}
       shell: bash
+      env:
+        PR_JSON: ${{ steps.release.outputs.pr }}
       run: |
-        PR_NUMBER=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.number')
+        PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
         echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
     - name: Create GitHub App token
