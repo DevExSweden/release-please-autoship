@@ -1,83 +1,42 @@
 #!/usr/bin/env bash
 #
-# Extract version from various file formats
+# Extract version from a JSON manifest file
 #
 # Usage:
-#   extract.sh <file_path> <key> <format>
+#   extract.sh <file_path> <key>
 #
 # Arguments:
-#   file_path - Path to the version file
-#   key       - Key/field name to extract (e.g. MARKETING_VERSION, VERSION_NAME)
-#   format    - File format: xcconfig | properties | plist | gradle-kts
+#   file_path - Path to the JSON version file (e.g. .release-please-manifest.json)
+#   key       - JSON key to extract (e.g. ".")
 #
 # Output:
 #   Prints the extracted version to stdout
 #
 # Exit codes:
 #   0 - Success
-#   1 - Invalid arguments or unsupported format
-#   2 - Failed to extract version (empty result)
+#   1 - Invalid arguments or file not found
+#   2 - Failed to extract version (key missing or empty result)
 
 set -euo pipefail
 
-if [ $# -ne 3 ]; then
+if [ $# -ne 2 ]; then
   echo "Error: Invalid number of arguments" >&2
-  echo "Usage: $0 <file_path> <key> <format>" >&2
+  echo "Usage: $0 <file_path> <key>" >&2
   exit 1
 fi
 
 FILE="$1"
 KEY="$2"
-FORMAT="$3"
 
 if [ ! -f "$FILE" ]; then
   echo "Error: File not found: $FILE" >&2
   exit 1
 fi
 
-extract_xcconfig() {
-  local file="$1" key="$2"
-  grep "^$key" "$file" | awk '{print $3}'
-}
-
-extract_properties() {
-  local file="$1" key="$2"
-  grep "^$key=" "$file" | cut -d= -f2 | xargs
-}
-
-extract_plist() {
-  local file="$1" key="$2"
-  plutil -extract "$key" raw -o - "$file"
-}
-
-extract_gradle_kts() {
-  local file="$1" key="$2"
-  grep "$key" "$file" 2>/dev/null | sed -n 's/.*["'\'']\([^"'\'']*\)["'\''].*/\1/p' | head -1 || true
-}
-
-# Extract version based on format
-case "$FORMAT" in
-  xcconfig)
-    VERSION=$(extract_xcconfig "$FILE" "$KEY")
-    ;;
-  properties)
-    VERSION=$(extract_properties "$FILE" "$KEY")
-    ;;
-  plist)
-    VERSION=$(extract_plist "$FILE" "$KEY")
-    ;;
-  gradle-kts)
-    VERSION=$(extract_gradle_kts "$FILE" "$KEY")
-    ;;
-  *)
-    echo "Error: Unsupported version_format: $FORMAT" >&2
-    echo "Supported formats: xcconfig, properties, plist, gradle-kts" >&2
-    exit 1
-    ;;
-esac
+VERSION=$(jq -r --arg key "$KEY" '.[$key] // empty' "$FILE" 2>/dev/null || true)
 
 if [ -z "$VERSION" ]; then
-  echo "Error: Failed to extract version from $FILE using key '$KEY' and format '$FORMAT'" >&2
+  echo "Error: Failed to extract version from $FILE using key '$KEY'" >&2
   exit 2
 fi
 

@@ -1,16 +1,14 @@
 name: "Extract Version"
-description: "Extract version from various file formats (xcconfig, properties, plist, gradle-kts)"
+description: "Extract version from a JSON manifest file"
 
 inputs:
   file-path:
-    description: "Path to the version file"
+    description: "Path to the JSON version file (e.g. .release-please-manifest.json)"
     required: true
   key:
-    description: "Key/field name to extract (e.g. MARKETING_VERSION, VERSION_NAME)"
-    required: true
-  format:
-    description: "File format: xcconfig | properties | plist | gradle-kts"
-    required: true
+    description: "JSON key to extract (e.g. '.')"
+    required: false
+    default: "."
 
 outputs:
   version:
@@ -26,8 +24,7 @@ runs:
       run: |
         VERSION=$("${{ github.action_path }}/scripts/extract.sh" \
           "${{ inputs.file-path }}" \
-          "${{ inputs.key }}" \
-          "${{ inputs.format }}")
+          "${{ inputs.key }}")
         
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "Extracted version: $VERSION"
