@@ -1,0 +1,45 @@
+name: "Auto-merge PR"
+description: "Approve and auto-merge a pull request using dual-identity pattern (App token creates/merges, GITHUB_TOKEN approves)"
+
+inputs:
+  pr-number:
+    description: "The PR number to approve and merge"
+    required: true
+  github-app-token:
+    description: "GitHub App token for enabling auto-merge"
+    required: true
+  merge-method:
+    description: "Merge method: squash, merge, or rebase"
+    required: false
+    default: "squash"
+  delete-branch:
+    description: "Delete the branch after merge"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Approve PR
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+      run: |
+        echo "Auto-approving PR #${PR_NUMBER}"
+        gh pr review "${PR_NUMBER}" --approve
+
+    - name: Enable auto-merge
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-app-token }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        MERGE_METHOD: ${{ inputs.merge-method }}
+        DELETE_BRANCH: ${{ inputs.delete-branch }}
+      run: |
+        ARGS="--auto --${MERGE_METHOD}"
+        if [[ "${DELETE_BRANCH}" == "true" ]]; then
+          ARGS="${ARGS} --delete-branch"
+        fi
+        echo "Enabling auto-merge for PR #${PR_NUMBER} (${MERGE_METHOD})"
+        gh pr merge ${ARGS} "${PR_NUMBER}"
