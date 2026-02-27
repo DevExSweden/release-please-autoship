@@ -52,6 +52,41 @@ describe("inline()", () => {
       { type: "text", text: { content: "Both" }, annotations: { bold: true, italic: true } }
     ]);
   });
+
+  it("maps link nodes — renders text with url", () => {
+    const nodes = [
+      {
+        type: "link",
+        url: "https://example.com",
+        children: [{ type: "text", value: "Click here" }]
+      }
+    ];
+    const rich = inline(nodes as any[]);
+    expect(rich).toEqual([
+      {
+        type: "text",
+        text: { content: "Click here", link: { url: "https://example.com" } }
+      }
+    ]);
+  });
+
+  it("maps bold link — preserves annotations on link text", () => {
+    const nodes = [
+      {
+        type: "strong",
+        children: [
+          {
+            type: "link",
+            url: "https://example.com",
+            children: [{ type: "text", value: "Bold link" }]
+          }
+        ]
+      }
+    ];
+    const rich = inline(nodes as any[]);
+    expect(rich[0].annotations?.bold).toBe(true);
+    expect(rich[0].text.link?.url).toBe("https://example.com");
+  });
 });
 
 

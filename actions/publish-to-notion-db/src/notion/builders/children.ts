@@ -2,19 +2,8 @@ type LoggerLike = {
   warning?: (message: string) => void;
 };
 
-const MAX_RICH_TEXT_LENGTH = 2000;
-
-function chunkText(input: string, size: number = MAX_RICH_TEXT_LENGTH): string[] {
-  console.log('chunkText', input, size);
-  if (!input) return [''];
-  const chunks: string[] = [];
-  let index = 0;
-  while (index < input.length) {
-    chunks.push(input.slice(index, index + size));
-    index += size;
-  }
-  return chunks;
-}
+import { chunkText } from '../utils/richText';
+import { sanitizeBlock } from './sanitizeBlocks';
 
 export default function buildChildren(
   body: string,
@@ -26,7 +15,8 @@ export default function buildChildren(
 
   if (bodyType === 'notion_blocks_json') {
     try {
-      return JSON.parse(body);
+      const blocks = JSON.parse(body);
+      return Array.isArray(blocks) ? blocks.map(sanitizeBlock) : blocks;
     } catch (e) {
       logger?.warning?.(`Failed to parse notion_blocks_json body: ${(e as Error).message}`);
       return [];

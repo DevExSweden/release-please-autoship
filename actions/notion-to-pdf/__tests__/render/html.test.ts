@@ -52,6 +52,40 @@ describe("render/html", () => {
     expect(html).toContain("Hidden text");
   });
 
+  it("renders Notion tables", () => {
+    const nodes: BlockNode[] = [
+      {
+        block: { id: "t", type: "table", table: { has_column_header: true, has_row_header: false } },
+        children: [
+          {
+            block: {
+              id: "tr1",
+              type: "table_row",
+              table_row: { cells: [[rt("Field")], [rt("Value")]] }
+            },
+            children: []
+          },
+          {
+            block: {
+              id: "tr2",
+              type: "table_row",
+              table_row: { cells: [[rt("Version")], [rt("1.2.3")]] }
+            },
+            children: []
+          }
+        ]
+      }
+    ];
+    const html = renderNodesToHtml(nodes);
+    expect(html).toContain("<table");
+    expect(html).toContain("<thead>");
+    expect(html).toContain("<th>");
+    expect(html).toContain("Field");
+    expect(html).toContain("<tbody>");
+    expect(html).toContain("Version");
+    expect(html).toContain("1.2.3");
+  });
+
   it("wraps content in an HTML document template", () => {
     const doc = buildHtmlDocument("Report", "<p>Body</p>");
     expect(doc).toContain("<!DOCTYPE html>");

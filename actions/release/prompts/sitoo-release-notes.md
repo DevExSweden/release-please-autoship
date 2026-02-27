@@ -83,6 +83,16 @@ After resolving these values, use them consistently throughout the release notes
 -   Output only the final release notes in GitHub Markdown.
 -   Do not output reasoning steps, system messages, or bullet lists.
 
+## OUTPUT CONSTRAINTS (HARD RULES)
+
+- **Every paragraph MUST be under 2 000 characters.** This is a hard technical
+  limit imposed by the publishing system. If a paragraph approaches this limit,
+  split it into two or more shorter paragraphs or convert it to a bullet list.
+- **Every bullet point MUST be under 2 000 characters.** Long bullets must be
+  split into multiple bullets.
+- Never write a single continuous block of text longer than 2 000 characters.
+  Count carefully — violating this limit will cause the publish step to fail.
+
 ## OUTPUT FORMAT (STRICT)
 You MUST follow the report format outlined above. Relase notes must include only following sections:
 
