@@ -195,6 +195,10 @@ below the table with the relevant details.
 
 - Include **concrete examples** wherever applicable:
   - Minimum supported Android OS version
+    - Determine this from the actual build configuration in the diff (e.g. `minSdk` / API level).
+    - Note: in some Android projects this is configured via Gradle convention plugins / build logic (e.g. `gradle/build-logic/**`), not only in app module Gradle files.
+    - Always include this line in the release notes, even if unchanged.
+    - If the diff does not explicitly change or reveal the value, state: "Unchanged (not modified in this release)" and do NOT guess a number.
   - Supported hardware models
   - Required firmware versions
   - API version requirements
@@ -323,7 +327,7 @@ _(State whether a database migration is included and any rollback implications.)
 ## Compatibility changes
 
 _(Include concrete values: minimum Android OS, supported hardware,
-required firmware versions, API versions.)_
+required firmware versions, API versions. Always state minimum Android OS as either a value (if present) or \"Unchanged (not modified in this release)\"; determine it from `minSdk`/API level in the diff—do not assume it is under `app/` only.)_
 
 ## Backward compatibility risks
 _(Outline any risk to existing workflows or integrations—payment gateways,
