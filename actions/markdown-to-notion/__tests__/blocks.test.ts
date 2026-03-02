@@ -84,10 +84,52 @@ describe("mapNode()", () => {
     expect(block.code.rich_text[0].text.content).toBe("const x = 1;");
   });
 
+  it("chunks oversized code block value into multiple rich_text entries", () => {
+    const longValue = "x".repeat(4500);
+    const node = { type: "code", lang: "ts", value: longValue } as any;
+    const block = mapNode(node) as any;
+    expect(block.type).toBe("code");
+    expect(block.code.rich_text.length).toBe(3);
+    expect(block.code.rich_text[0].text.content.length).toBe(2000);
+    expect(block.code.rich_text[1].text.content.length).toBe(2000);
+    expect(block.code.rich_text[2].text.content.length).toBe(500);
+  });
+
   it("maps thematic breaks to divider", () => {
     const node = { type: "thematicBreak" } as any;
     const block = mapNode(node) as any;
     expect(block.type).toBe("divider");
+  });
+
+  it("maps table to Notion table block", () => {
+    const node = {
+      type: "table",
+      children: [
+        {
+          type: "tableRow",
+          children: [
+            { type: "tableCell", children: [{ type: "text", value: "Area" }] },
+            { type: "tableCell", children: [{ type: "text", value: "Change" }] },
+          ]
+        },
+        {
+          type: "tableRow",
+          children: [
+            { type: "tableCell", children: [{ type: "text", value: "Payments" }] },
+            { type: "tableCell", children: [{ type: "text", value: "New flow" }] },
+          ]
+        }
+      ]
+    } as any;
+
+    const block = mapNode(node) as any;
+    expect(block.type).toBe("table");
+    expect(block.table.table_width).toBe(2);
+    expect(block.table.has_column_header).toBe(true);
+    expect(block.table.children).toHaveLength(2);
+    expect(block.table.children[0].type).toBe("table_row");
+    expect(block.table.children[0].table_row.cells[0][0].text.content).toBe("Area");
+    expect(block.table.children[1].table_row.cells[0][0].text.content).toBe("Payments");
   });
 });
 

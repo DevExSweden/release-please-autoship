@@ -87,7 +87,7 @@ jobs:
         id: read_notes
         run: |
           file=$(find ./release-notes -name "*.md" -type f | head -n 1)
-          echo "file=$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
           {
             echo "body<<EOF"
             cat "$file"
@@ -98,7 +98,20 @@ jobs:
         id: notion_blocks
         uses: sitoo/mobile-shared-cicd/actions/markdown-to-notion@main
         with:
-          markdown: ${{ steps.read_notes.outputs.body }}
+          markdown_path: ${{ steps.read_notes.outputs.file }}
+
+      - name: Trim version (drop v/suffix)
+        id: trim_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          raw='${{ needs.determine-tags.outputs.current_tag }}'
+          if [[ "$raw" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            trimmed="${BASH_REMATCH[1]}"
+          else
+            trimmed="$raw"
+          fi
+          echo "trimmed=$trimmed" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Notion DB
         uses: sitoo/mobile-shared-cicd/actions/publish-to-notion-db@main
@@ -106,7 +119,7 @@ jobs:
           notion_token: ${{ secrets.NOTION_RELEASE_API_TOKEN }}
           notion_database_id: ${{ secrets.NOTION_RELEASE_NOTES_DB }}
           title_property_name: "Name"
-          title: "${{ needs.determine-tags.outputs.current_tag }} Release Notes"
+          title: "${{ steps.trim_version.outputs.trimmed }} Release Notes"
 
           properties_json: >
             {
@@ -114,7 +127,7 @@ jobs:
                 "rich_text": [
                   {
                     "type": "text",
-                    "text": { "content": "${{ needs.determine-tags.outputs.current_tag }}" }
+                    "text": { "content": "${{ steps.trim_version.outputs.trimmed }}" }
                   }
                 ]
               },
