@@ -30768,8 +30768,6 @@ function getInputs(core) {
     const propertiesJson = core.getInput('properties_json') || '';
     const body = core.getInput('body') || '';
     const bodyType = core.getInput('body_type') || 'notion_blocks_json';
-    console.log('bodyType', bodyType);
-    console.log('body', body);
     let properties = {};
     if (propertiesJson.trim().length > 0) {
         try {
@@ -30867,32 +30865,22 @@ if (require.main === require.cache[eval('__filename')]) {
 /***/ }),
 
 /***/ 3915:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = buildChildren;
-const MAX_RICH_TEXT_LENGTH = 2000;
-function chunkText(input, size = MAX_RICH_TEXT_LENGTH) {
-    console.log('chunkText', input, size);
-    if (!input)
-        return [''];
-    const chunks = [];
-    let index = 0;
-    while (index < input.length) {
-        chunks.push(input.slice(index, index + size));
-        index += size;
-    }
-    return chunks;
-}
+const richText_1 = __nccwpck_require__(2526);
+const sanitizeBlocks_1 = __nccwpck_require__(4989);
 function buildChildren(body, bodyType, logger) {
     const trimmed = (body || '').trim();
     if (trimmed.length === 0)
         return [];
     if (bodyType === 'notion_blocks_json') {
         try {
-            return JSON.parse(body);
+            const blocks = JSON.parse(body);
+            return Array.isArray(blocks) ? blocks.map(sanitizeBlocks_1.sanitizeBlock) : blocks;
         }
         catch (e) {
             logger?.warning?.(`Failed to parse notion_blocks_json body: ${e.message}`);
@@ -30900,7 +30888,7 @@ function buildChildren(body, bodyType, logger) {
         }
     }
     if (bodyType === 'paragraph') {
-        const richText = chunkText(body).map((content) => ({
+        const richText = (0, richText_1.chunkText)(body).map((content) => ({
             type: 'text',
             text: { content }
         }));
@@ -30915,7 +30903,7 @@ function buildChildren(body, bodyType, logger) {
         ];
     }
     if (bodyType === 'markdown_code') {
-        const richText = chunkText(body).map((content) => ({
+        const richText = (0, richText_1.chunkText)(body).map((content) => ({
             type: 'text',
             text: { content }
         }));
@@ -30932,7 +30920,7 @@ function buildChildren(body, bodyType, logger) {
     }
     // fallback
     logger?.warning?.(`Unknown body_type '${bodyType}', falling back to paragraph.`);
-    const fallbackRichText = chunkText(body).map((content) => ({
+    const fallbackRichText = (0, richText_1.chunkText)(body).map((content) => ({
         type: 'text',
         text: { content }
     }));
@@ -30973,6 +30961,80 @@ function buildProperties(titlePropertyName, title, extraProperties) {
 
 /***/ }),
 
+/***/ 4989:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sanitizeBlock = sanitizeBlock;
+const richText_1 = __nccwpck_require__(2526);
+const RICH_TEXT_BLOCK_TYPES = [
+    'paragraph',
+    'heading_1',
+    'heading_2',
+    'heading_3',
+    'bulleted_list_item',
+    'numbered_list_item',
+    'quote',
+    'callout',
+    'toggle',
+    'to_do',
+    'code'
+];
+/**
+ * Recursively sanitize a block so that no rich_text entry exceeds 2000 chars.
+ * Handles:
+ *  - All standard block types with a top-level rich_text array
+ *  - table_row cells (each cell is an array of rich_text items)
+ *  - table blocks (recurses into their children rows)
+ */
+function sanitizeBlock(block) {
+    const blockType = block?.type;
+    if (!blockType)
+        return block;
+    if (RICH_TEXT_BLOCK_TYPES.includes(blockType)) {
+        const section = block[blockType];
+        if (section?.rich_text && Array.isArray(section.rich_text)) {
+            return {
+                ...block,
+                [blockType]: { ...section, rich_text: (0, richText_1.chunkRichTextArray)(section.rich_text) }
+            };
+        }
+        return block;
+    }
+    if (blockType === 'table_row') {
+        const cells = block.table_row?.cells;
+        if (Array.isArray(cells)) {
+            return {
+                ...block,
+                table_row: {
+                    ...block.table_row,
+                    cells: cells.map((cell) => (Array.isArray(cell) ? (0, richText_1.chunkRichTextArray)(cell) : cell))
+                }
+            };
+        }
+        return block;
+    }
+    if (blockType === 'table') {
+        const tableChildren = block.table?.children;
+        if (Array.isArray(tableChildren)) {
+            return {
+                ...block,
+                table: {
+                    ...block.table,
+                    children: tableChildren.map(sanitizeBlock)
+                }
+            };
+        }
+        return block;
+    }
+    return block;
+}
+
+
+/***/ }),
+
 /***/ 8259:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -30981,25 +31043,116 @@ function buildProperties(titlePropertyName, title, extraProperties) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = createNotionPage;
 const NOTION_CHILDREN_BATCH_LIMIT = 100;
+/**
+ * Notion's blocks.children.append API does not support nested `children`
+ * inside table blocks — the table rows are silently dropped.
+ * After appending a batch that contains table blocks, we must append the
+ * table rows to each table block separately using its block ID.
+ *
+ * @param originalBatch  - the blocks as originally constructed (with table.children)
+ * @param appendedBlocks - the blocks returned by Notion after the append (with IDs, no nested children)
+ */
+async function appendTableRows(notionClient, originalBatch, appendedBlocks) {
+    if (!notionClient.blocks?.children?.append)
+        return;
+    for (let i = 0; i < originalBatch.length; i++) {
+        const original = originalBatch[i];
+        if (original?.type === 'table' &&
+            Array.isArray(original?.table?.children) &&
+            original.table.children.length > 0) {
+            const createdBlock = appendedBlocks[i];
+            const blockId = createdBlock?.id;
+            if (blockId) {
+                await notionClient.blocks.children.append({
+                    block_id: blockId,
+                    children: original.table.children
+                });
+            }
+        }
+    }
+}
+/**
+ * Strip nested `children` from table blocks before sending them in a
+ * blocks.children.append call. The rows will be appended separately
+ * after the API returns the created block IDs.
+ */
+function stripTableChildren(blocks) {
+    return blocks.map((block) => {
+        if (block?.type === 'table' && Array.isArray(block?.table?.children)) {
+            const { children: _rows, ...tableWithoutChildren } = block.table;
+            return { ...block, table: tableWithoutChildren };
+        }
+        return block;
+    });
+}
 async function createNotionPage(notionClient, databaseId, properties, children) {
     const firstBatch = Array.isArray(children) ? children.slice(0, NOTION_CHILDREN_BATCH_LIMIT) : [];
     const page = await notionClient.pages.create({
         parent: { database_id: databaseId },
         properties,
+        // Notion supports nested children for table blocks in pages.create
         children: firstBatch
     });
     if (Array.isArray(children) && children.length > NOTION_CHILDREN_BATCH_LIMIT) {
         for (let i = NOTION_CHILDREN_BATCH_LIMIT; i < children.length; i += NOTION_CHILDREN_BATCH_LIMIT) {
             const batch = children.slice(i, i + NOTION_CHILDREN_BATCH_LIMIT);
             if (notionClient.blocks?.children?.append) {
-                await notionClient.blocks.children.append({
+                const result = await notionClient.blocks.children.append({
                     block_id: page.id,
-                    children: batch
+                    children: stripTableChildren(batch)
                 });
+                // Append table rows separately for each table block in this batch
+                const appendedBlocks = result?.results ?? [];
+                await appendTableRows(notionClient, batch, appendedBlocks);
             }
         }
     }
     return page;
+}
+
+
+/***/ }),
+
+/***/ 2526:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MAX_RICH_TEXT_LENGTH = void 0;
+exports.chunkText = chunkText;
+exports.chunkRichTextArray = chunkRichTextArray;
+exports.MAX_RICH_TEXT_LENGTH = 2000;
+function chunkText(input, size = exports.MAX_RICH_TEXT_LENGTH) {
+    if (!input)
+        return [''];
+    const chunks = [];
+    let index = 0;
+    while (index < input.length) {
+        chunks.push(input.slice(index, index + size));
+        index += size;
+    }
+    return chunks;
+}
+/**
+ * Split any individual rich_text entries whose text.content exceeds 2000 chars
+ * into multiple entries. Works for both block-level rich_text arrays and
+ * table_row cell arrays.
+ */
+function chunkRichTextArray(richText) {
+    const result = [];
+    for (const entry of richText) {
+        const content = entry?.text?.content;
+        if (typeof content === 'string' && content.length > exports.MAX_RICH_TEXT_LENGTH) {
+            for (const chunk of chunkText(content)) {
+                result.push({ ...entry, text: { ...entry.text, content: chunk } });
+            }
+        }
+        else {
+            result.push(entry);
+        }
+    }
+    return result;
 }
 
 

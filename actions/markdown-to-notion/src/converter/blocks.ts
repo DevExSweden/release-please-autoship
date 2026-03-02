@@ -1,6 +1,17 @@
-import type { RootContent, Paragraph, Heading, List, ListItem, Code } from "mdast";
+import type { RootContent, Paragraph, Heading, List, ListItem, Code, Table, TableRow, TableCell } from "mdast";
 import type { BlockObjectRequest } from "./types";
 import { inline } from "./inline";
+
+const MAX_RICH_TEXT_LENGTH = 2000;
+
+function chunkText(value: string): string[] {
+	if (value.length <= MAX_RICH_TEXT_LENGTH) return [value];
+	const chunks: string[] = [];
+	for (let i = 0; i < value.length; i += MAX_RICH_TEXT_LENGTH) {
+		chunks.push(value.slice(i, i + MAX_RICH_TEXT_LENGTH));
+	}
+	return chunks;
+}
 
 export function mapNode(node: RootContent): BlockObjectRequest | BlockObjectRequest[] | null {
 	switch (node.type) {
@@ -8,6 +19,7 @@ export function mapNode(node: RootContent): BlockObjectRequest | BlockObjectRequ
 		case "paragraph": return paragraph(node as Paragraph);
 		case "list":      return list(node as List);
 		case "code":      return code(node as Code);
+		case "table":     return table(node as Table);
 		case "thematicBreak": return divider();
 		default: return null;
 	}
@@ -62,12 +74,39 @@ function code(node: Code): BlockObjectRequest {
 		type: "code",
 		code: {
 			language: node.lang || "text",
-			rich_text: [
-				{
-					type: "text",
-					text: { content: node.value }
-				}
-			]
+			rich_text: chunkText(node.value).map(chunk => ({
+				type: "text",
+				text: { content: chunk }
+			}))
+		}
+	};
+}
+
+function table(node: Table): BlockObjectRequest {
+	const rows = node.children as TableRow[];
+	const tableWidth = rows.length > 0
+		? (rows[0].children as TableCell[]).length
+		: 0;
+
+	const children = rows.map((row) => {
+		const cells = (row.children as TableCell[]).map((cell) =>
+			inline(cell.children)
+		);
+		return {
+			object: "block" as const,
+			type: "table_row" as const,
+			table_row: { cells }
+		};
+	});
+
+	return {
+		object: "block",
+		type: "table",
+		table: {
+			table_width: tableWidth,
+			has_column_header: true,
+			has_row_header: false,
+			children
 		}
 	};
 }

@@ -20,7 +20,11 @@ export async function buildBlockTree(notion: Client, parentId: string): Promise<
   const blocks = await listChildren(notion, parentId);
   const nodes: BlockNode[] = [];
   for (const b of blocks) {
-    const needsChildren = Boolean(b.has_children) || b.type === "child_page" || b.type === "toggle";
+    const needsChildren =
+      Boolean(b.has_children) ||
+      b.type === "child_page" ||
+      b.type === "toggle" ||
+      b.type === "table";
     const childNodes = needsChildren ? await buildBlockTree(notion, b.id) : [];
     nodes.push({ block: b, children: childNodes });
   }

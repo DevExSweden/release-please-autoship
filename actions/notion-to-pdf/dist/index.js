@@ -91183,7 +91183,10 @@ async function buildBlockTree(notion, parentId) {
     const blocks = await listChildren(notion, parentId);
     const nodes = [];
     for (const b of blocks) {
-        const needsChildren = Boolean(b.has_children) || b.type === "child_page" || b.type === "toggle";
+        const needsChildren = Boolean(b.has_children) ||
+            b.type === "child_page" ||
+            b.type === "toggle" ||
+            b.type === "table";
         const childNodes = needsChildren ? await buildBlockTree(notion, b.id) : [];
         nodes.push({ block: b, children: childNodes });
     }
@@ -91266,6 +91269,28 @@ function renderNodesToHtml(nodes) {
             const rich = (b.paragraph?.rich_text ?? []);
             const childrenHtml = node.children.length ? renderNodesToHtml(node.children) : "";
             htmlParts.push(`<p>${renderRichText(rich)}</p>${childrenHtml}`);
+        }
+        else if (t === "table") {
+            const table = b.table ?? {};
+            const hasColumnHeader = Boolean(table.has_column_header);
+            const hasRowHeader = Boolean(table.has_row_header);
+            const rowNodes = node.children.filter((c) => c.block?.type === "table_row");
+            const renderRow = (rowNode, cellTag, rowHeader) => {
+                const cells = (rowNode.block.table_row?.cells ?? []);
+                const cellHtml = cells
+                    .map((cell, idx) => {
+                    const tag = rowHeader && idx === 0 ? "th" : cellTag;
+                    return `<${tag}>${renderRichText(cell)}</${tag}>`;
+                })
+                    .join("");
+                return `<tr>${cellHtml}</tr>`;
+            };
+            const headRows = hasColumnHeader && rowNodes.length ? [rowNodes[0]] : [];
+            const bodyRows = hasColumnHeader ? rowNodes.slice(1) : rowNodes;
+            const thead = headRows.length ? `<thead>${renderRow(headRows[0], "th", hasRowHeader)}</thead>` : "";
+            const tbody = `<tbody>${bodyRows.map((r) => renderRow(r, "td", hasRowHeader)).join("")}</tbody>`;
+            const childrenHtml = node.children.length && rowNodes.length === 0 ? renderNodesToHtml(node.children) : "";
+            htmlParts.push(`<table class="notion-table">${thead}${tbody}</table>${childrenHtml}`);
         }
         else if (t === "heading_1") {
             const rich = (b.heading_1?.rich_text ?? []);
@@ -91399,6 +91424,23 @@ function buildHtmlDocument(title, inner) {
         border: none;
         border-top: 1px solid #e5e7eb;
         margin: 16px 0;
+      }
+      table.notion-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 12px;
+        page-break-inside: avoid;
+      }
+      table.notion-table th, table.notion-table td {
+        border: 1px solid #e5e7eb;
+        padding: 6px 8px;
+        vertical-align: top;
+        text-align: left;
+        word-break: break-word;
+      }
+      table.notion-table thead th {
+        background: #f8fafc;
+        font-weight: 700;
       }
       @page {
         margin: 12mm 12mm 16mm 12mm;
