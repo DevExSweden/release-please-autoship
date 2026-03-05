@@ -30880,7 +30880,9 @@ function buildChildren(body, bodyType, logger) {
     if (bodyType === 'notion_blocks_json') {
         try {
             const blocks = JSON.parse(body);
-            return Array.isArray(blocks) ? blocks.map(sanitizeBlocks_1.sanitizeBlock) : blocks;
+            if (!Array.isArray(blocks))
+                return blocks;
+            return blocks.map(sanitizeBlocks_1.sanitizeBlock).flatMap(sanitizeBlocks_1.splitTableIfNeeded);
         }
         catch (e) {
             logger?.warning?.(`Failed to parse notion_blocks_json body: ${e.message}`);
@@ -30968,7 +30970,10 @@ function buildProperties(titlePropertyName, title, extraProperties) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.sanitizeBlock = sanitizeBlock;
+exports.splitTableIfNeeded = splitTableIfNeeded;
 const richText_1 = __nccwpck_require__(2526);
+/** Notion API limit: max 100 table_row children per table block */
+const MAX_TABLE_CHILDREN = 100;
 const RICH_TEXT_BLOCK_TYPES = [
     'paragraph',
     'heading_1',
@@ -31030,6 +31035,36 @@ function sanitizeBlock(block) {
         return block;
     }
     return block;
+}
+/**
+ * If the block is a table with more than 100 children, return multiple table blocks
+ * each with ≤100 children (header row repeated when has_column_header). Otherwise return [block].
+ */
+function splitTableIfNeeded(block) {
+    if (block?.type !== 'table' || !Array.isArray(block.table?.children)) {
+        return [block];
+    }
+    const children = block.table.children;
+    if (children.length <= MAX_TABLE_CHILDREN) {
+        return [block];
+    }
+    const hasColumnHeader = Boolean(block.table.has_column_header);
+    const headerRow = hasColumnHeader ? children[0] : null;
+    const dataRows = hasColumnHeader ? children.slice(1) : children;
+    const maxDataPerTable = MAX_TABLE_CHILDREN - (headerRow ? 1 : 0);
+    const result = [];
+    for (let i = 0; i < dataRows.length; i += maxDataPerTable) {
+        const chunk = dataRows.slice(i, i + maxDataPerTable);
+        const rowsForTable = headerRow ? [headerRow, ...chunk] : chunk;
+        result.push({
+            ...block,
+            table: {
+                ...block.table,
+                children: rowsForTable
+            }
+        });
+    }
+    return result;
 }
 
 

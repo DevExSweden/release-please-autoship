@@ -128,6 +128,38 @@ describe('buildChildren', () => {
     expect(cells[0][0].text.content.length).toBe(2000);
     expect(cells[0][1].text.content.length).toBe(100);
   });
+
+  it('splits table with more than 100 rows into multiple tables', () => {
+    const headerRow = {
+      object: 'block',
+      type: 'table_row',
+      table_row: { cells: [[{ type: 'text', text: { content: 'Commit' } }]] }
+    };
+    const dataRow = (i: number) => ({
+      object: 'block',
+      type: 'table_row',
+      table_row: { cells: [[{ type: 'text', text: { content: `commit-${i}` } }]] }
+    });
+    const rows = [headerRow, ...Array.from({ length: 101 }, (_, i) => dataRow(i))];
+    const blocks = [
+      {
+        object: 'block',
+        type: 'table',
+        table: {
+          table_width: 1,
+          has_column_header: true,
+          has_row_header: false,
+          children: rows
+        }
+      }
+    ];
+    const res = buildChildren(JSON.stringify(blocks), 'notion_blocks_json');
+    expect(res.length).toBe(2);
+    expect(res[0].type).toBe('table');
+    expect(res[0].table.children.length).toBe(100);
+    expect(res[1].type).toBe('table');
+    expect(res[1].table.children.length).toBe(3);
+  });
 });
 
 
