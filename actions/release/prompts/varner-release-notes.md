@@ -89,8 +89,6 @@ Rules:
 
 - Treat the git diff as the **single source of truth**
 - You ARE NOT ALLOWED to describe your own actions, tools, or steps
-- You MUST NOT mention commits, branches, tags, PR numbers, or ticket IDs
-- You MUST NOT include internal labels (BUGS-, POSS-, PS-, APPE-, etc.)
 
 Describe ONLY **user-visible changes**:
 - Behavior
@@ -103,6 +101,19 @@ Exclude ONLY IF there is truly no user impact:
 - Build/CI-only changes
 - Test-only changes
 - Formatting or rename-only changes
+
+### Commit traceability rule
+
+In addition to the customer-facing release notes, the document MUST include
+a section listing the titles of all commits included in the release scope.
+
+Rules:
+- The commit titles MUST be listed exactly as written in Git.
+- Do NOT modify, summarize, or rewrite commit titles.
+- Do NOT include commit SHAs, PR numbers, or ticket IDs unless they are part
+  of the commit title itself.
+- This section exists only for traceability and MUST NOT influence the
+  wording of the release notes.
 
 ### IMPORTANT OVERRIDE RULE
 
@@ -276,8 +287,15 @@ All sections MUST be present, even if they state "No changes" or "None".
 | Current commit SHA | CURRENT_COMMIT_SHA |
 | Release date |  |
 
+## Commit titles included in this release
+
+| Commit title |
+|---|
+| … |
+| … |
+
 ## Overview / summary
-_(2–4 sentences: what this release contains at a high level.)_
+_(Bullet list: high-level summary of the most important changes in this release.)_
 
 ## Prerequisites
 
