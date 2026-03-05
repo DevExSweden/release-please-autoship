@@ -1,5 +1,8 @@
 import { chunkRichTextArray } from '../utils/richText';
 
+/** Notion API limit: max 100 table_row children per table block */
+const MAX_TABLE_CHILDREN = 100;
+
 const RICH_TEXT_BLOCK_TYPES = [
   'paragraph',
   'heading_1',
@@ -65,5 +68,36 @@ export function sanitizeBlock(block: any): any {
   }
 
   return block;
+}
+
+/**
+ * If the block is a table with more than 100 children, return multiple table blocks
+ * each with ≤100 children (header row repeated when has_column_header). Otherwise return [block].
+ */
+export function splitTableIfNeeded(block: any): any[] {
+  if (block?.type !== 'table' || !Array.isArray(block.table?.children)) {
+    return [block];
+  }
+  const children = block.table.children;
+  if (children.length <= MAX_TABLE_CHILDREN) {
+    return [block];
+  }
+  const hasColumnHeader = Boolean(block.table.has_column_header);
+  const headerRow = hasColumnHeader ? children[0] : null;
+  const dataRows = hasColumnHeader ? children.slice(1) : children;
+  const maxDataPerTable = MAX_TABLE_CHILDREN - (headerRow ? 1 : 0);
+  const result: any[] = [];
+  for (let i = 0; i < dataRows.length; i += maxDataPerTable) {
+    const chunk = dataRows.slice(i, i + maxDataPerTable);
+    const rowsForTable = headerRow ? [headerRow, ...chunk] : chunk;
+    result.push({
+      ...block,
+      table: {
+        ...block.table,
+        children: rowsForTable
+      }
+    });
+  }
+  return result;
 }
 

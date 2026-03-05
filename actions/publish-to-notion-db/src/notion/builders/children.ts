@@ -3,7 +3,7 @@ type LoggerLike = {
 };
 
 import { chunkText } from '../utils/richText';
-import { sanitizeBlock } from './sanitizeBlocks';
+import { sanitizeBlock, splitTableIfNeeded } from './sanitizeBlocks';
 
 export default function buildChildren(
   body: string,
@@ -16,7 +16,8 @@ export default function buildChildren(
   if (bodyType === 'notion_blocks_json') {
     try {
       const blocks = JSON.parse(body);
-      return Array.isArray(blocks) ? blocks.map(sanitizeBlock) : blocks;
+      if (!Array.isArray(blocks)) return blocks;
+      return blocks.map(sanitizeBlock).flatMap(splitTableIfNeeded);
     } catch (e) {
       logger?.warning?.(`Failed to parse notion_blocks_json body: ${(e as Error).message}`);
       return [];
