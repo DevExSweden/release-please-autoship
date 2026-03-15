@@ -35633,10 +35633,11 @@ const core = __importStar(__nccwpck_require__(7484));
 const web_api_1 = __nccwpck_require__(5105);
 const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
+const resolveChannel_1 = __nccwpck_require__(8300);
 async function run() {
     try {
         const token = core.getInput("slack_token", { required: true });
-        const channelId = core.getInput("channel_id", { required: true });
+        const channelName = core.getInput("channel", { required: true });
         const filePath = core.getInput("file_path", { required: true });
         const fileNameInput = core.getInput("file_name") || "";
         const initialComment = core.getInput("initial_comment") || "";
@@ -35646,6 +35647,7 @@ async function run() {
             throw new Error(`File not found at path: ${resolved}`);
         }
         const client = new web_api_1.WebClient(token);
+        const channelId = await (0, resolveChannel_1.resolveChannelId)(client, channelName);
         const fileStream = fs.createReadStream(resolved);
         const filename = fileNameInput || path.basename(resolved);
         const result = await client.files.uploadV2({
@@ -35667,6 +35669,50 @@ async function run() {
     }
 }
 run();
+
+
+/***/ }),
+
+/***/ 8300:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveChannelId = resolveChannelId;
+/**
+ * Resolve channel to ID via conversations.list. Matches by channel ID or name.
+ */
+async function resolveChannelId(client, channel) {
+    const trimmed = channel.trim();
+    const searchName = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
+    let cursor;
+    do {
+        const response = await client.conversations.list({
+            types: "public_channel,private_channel",
+            exclude_archived: true,
+            limit: 200,
+            cursor,
+        });
+        if (!response.ok || !response.channels) {
+            throw new Error(response.error ?? "Failed to list channels for name resolution");
+        }
+        for (const ch of response.channels) {
+            if (ch.id === trimmed)
+                return ch.id;
+            const name = ch.name ?? "";
+            const nameNormalized = ch.name_normalized ?? name;
+            if (name === searchName ||
+                nameNormalized === searchName ||
+                name === searchName.toLowerCase() ||
+                nameNormalized === searchName.toLowerCase()) {
+                return ch.id;
+            }
+        }
+        cursor = response.response_metadata?.next_cursor;
+    } while (cursor);
+    throw new Error(`Channel not found: ${channel}`);
+}
 
 
 /***/ }),

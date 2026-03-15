@@ -19,8 +19,19 @@ on:
         type: string
         default: "."
 
-      slack-channel:
-        description: "Slack channel to notify"
+      changelog-file-path:
+        description: "Path to CHANGELOG.md (full changelog for this version will be uploaded to Slack on success)"
+        required: false
+        type: string
+        default: "CHANGELOG.md"
+
+      slack-channel-success:
+        description: "Slack channel name for success notifications (e.g. releases)"
+        required: true
+        type: string
+
+      slack-channel-failure:
+        description: "Slack channel name for failure notifications (e.g. releases-alerts)"
         required: true
         type: string
 
@@ -83,21 +94,46 @@ jobs:
           git checkout -b "$RELEASE_BRANCH"
           git push origin "$RELEASE_BRANCH"
 
-      - name: Notify Slack
-        if: always()
+      - name: Extract changelog for version
+        id: extract-changelog
+        if: success()
+        uses: sitoo/mobile-shared-cicd/actions/extract-changelog@main
+        with:
+          changelog-file-path: ${{ inputs.changelog-file-path }}
+          version: ${{ steps.version.outputs.version }}
+
+      - name: Notify Slack (with changelog file)
+        if: success()
+        uses: sitoo/mobile-shared-cicd/actions/slack-upload-file@main
+        with:
+          slack_token: ${{ secrets.SLACK_RELEASE_BOT_TOKEN }}
+          channel: ${{ inputs.slack-channel-success }}
+          file_path: ${{ steps.extract-changelog.outputs.file }}
+          file_name: "CHANGELOG-v${{ steps.version.outputs.version }}.md"
+          title: "Release v${{ steps.version.outputs.version }} Changelog"
+          initial_comment: |
+            ✅ Release Branch for v${{ steps.version.outputs.version }} Ready
+            From: ${{ inputs.target-branch }}
+            Release Branch: release-v${{ steps.version.outputs.version }}
+            Repository: ${{ github.repository }}
+            Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Next: Full changelog attached as file.
+
+      - name: Notify Slack (failure only)
+        if: failure()
         uses: sitoo/mobile-shared-cicd/actions/slack-status-notification@main
         with:
           status: ${{ job.status }}
-          channel: ${{ inputs.slack-channel }}
-          success-title: "Release Branch for v${{ steps.version.outputs.version || 'unknown' }} Ready"
-          failure-title: "Release Preparation Failed"
+          channel: ${{ inputs.slack-channel-failure }}
+          failure-title: "Release Preparation Failed for version ${{ steps.version.outputs.version }}"
           fields: |
             {
               "From": "${{ inputs.target-branch }}",
-              "Release Branch": "${{ job.status == 'success' && format('release-v{0}', steps.version.outputs.version) || 'not created' }}",
+              "Release Branch": "not created",
+              "Version": "${{ steps.version.outputs.version }}",
               "Repository": "${{ github.repository }}",
               "Details": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
-          success-footer: "Next: Start internal beta testing"
           failure-footer: "Action: Check the workflow run, fix issues, and retry."
           slack-token: ${{ secrets.SLACK_RELEASE_BOT_TOKEN }}

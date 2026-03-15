@@ -43,6 +43,10 @@ jobs:
               - 'actions/markdown-to-notion/**'
             publish_to_notion_db:
               - 'actions/publish-to-notion-db/**'
+            notion_to_pdf:
+              - 'actions/notion-to-pdf/**'
+            slack_upload_file:
+              - 'actions/slack-upload-file/**'
 
       - name: Setup Node.js
         if: steps.changes.outputs.actions == 'true'
@@ -53,6 +57,8 @@ jobs:
           cache-dependency-path: |
             actions/markdown-to-notion/package-lock.json
             actions/publish-to-notion-db/package-lock.json
+            actions/notion-to-pdf/package-lock.json
+            actions/slack-upload-file/package-lock.json
 
       - name: Test markdown-to-notion action
         if: steps.changes.outputs.markdown_to_notion == 'true'
@@ -72,5 +78,12 @@ jobs:
         if: steps.changes.outputs.notion_to_pdf == 'true'
         run: |
           cd actions/notion-to-pdf
+          npm ci
+          npm test
+
+      - name: Test slack-upload-file action
+        if: steps.changes.outputs.slack_upload_file == 'true'
+        run: |
+          cd actions/slack-upload-file
           npm ci
           npm test

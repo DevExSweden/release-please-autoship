@@ -24,6 +24,18 @@ on:
         required: false
         type: string
         default: ".github/.release-please-manifest.json"
+      
+      release-as:
+        description: "Force release as this version (e.g. 1.2.3)"
+        required: false
+        type: string
+        default: ""
+
+      skip-github-release:
+        description: "Skip creating GitHub release (only create PR)"
+        required: false
+        type: string
+        default: "true"
 
     secrets:
       GH_APP_PRIVATE_KEY:
@@ -53,3 +65,5 @@ jobs:
           github-app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           config-file: ${{ inputs.config-file }}
           manifest-file: ${{ inputs.manifest-file }}
+          release-as: ${{ inputs.release-as }}
+          skip-github-release: ${{ inputs.skip-github-release }}
