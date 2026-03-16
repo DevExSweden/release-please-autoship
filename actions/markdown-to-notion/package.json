@@ -14,7 +14,6 @@
     },
     "dependencies": {
         "@actions/core": "^2.0.2",
-        "@notionhq/client": "^2.2.15",
         "remark-gfm": "^4.0.1",
         "remark-parse": "^11.0.0",
         "unified": "^11.0.5"

@@ -9,7 +9,7 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": false,
-    "types": []
+    "types": ["node"]
   },
   "include": ["src/**/*", "__tests__/**/*.ts"],
   "exclude": ["dist", "node_modules"]
