@@ -5,8 +5,8 @@ inputs:
   slack_token:
     description: "Slack bot token with files:write and chat:write scopes."
     required: true
-  channel_id:
-    description: "Slack channel ID (e.g., C123..., not the channel name)."
+  channel:
+    description: "Slack channel name (e.g. releases, #releases). Resolved via conversations.list."
     required: true
   file_path:
     description: "Path to the file to upload."

@@ -13,6 +13,13 @@ inputs:
     description: "Path to release-please manifest file"
     required: false
     default: ".github/.release-please-manifest.json"
+  release-as:
+    description: "Force release as this version (e.g. 1.2.3)"
+    required: false
+  skip-github-release:
+    description: "Skip creating GitHub release (only create PR)"
+    required: false
+    default: "true"
   github-app-id:
     description: "GitHub App ID for auto-merge token"
     required: true
@@ -50,10 +57,11 @@ runs:
       with:
         token: ${{ steps.app-token.outputs.token }}
         target-branch: ${{ inputs.target-branch }}
-        skip-github-release: true
+        skip-github-release: ${{ inputs.skip-github-release }}
         config-file: ${{ inputs.config-file }}
         manifest-file: ${{ inputs.manifest-file }}
         skip-labeling: true
+        release-as: ${{ inputs.release-as }}
 
     - name: Extract PR number
       id: pr_number

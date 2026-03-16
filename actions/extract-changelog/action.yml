@@ -1,0 +1,39 @@
+name: "Extract Changelog"
+description: "Extract changelog for a specific version from CHANGELOG.md. Format: '1.19.0 (2026-02-25)'."
+
+inputs:
+  changelog-file-path:
+    description: "Path to CHANGELOG.md"
+    required: true
+  version:
+    description: "Version to extract (e.g. 1.19.0)"
+    required: true
+  output-file:
+    description: "Path for the extracted changelog output file"
+    required: false
+    default: ""
+
+outputs:
+  file:
+    description: "Path to the extracted changelog file"
+    value: ${{ steps.extract.outputs.file }}
+  has_content:
+    description: "Whether the extracted changelog has content (true/false)"
+    value: ${{ steps.extract.outputs.has_content }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Extract changelog
+      id: extract
+      shell: bash
+      run: |
+        OUTPUT_FILE="${{ inputs.output-file != '' && inputs.output-file || format('.release-changelog-v{0}.md', inputs.version) }}"
+        chmod +x "${{ github.action_path }}/scripts/extract.sh"
+        "${{ github.action_path }}/scripts/extract.sh" \
+          "${{ inputs.changelog-file-path }}" \
+          "${{ inputs.version }}" \
+          "$OUTPUT_FILE"
+        
+        echo "file=$OUTPUT_FILE" >> "$GITHUB_OUTPUT"
+        echo "has_content=$( [ -s "$OUTPUT_FILE" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"

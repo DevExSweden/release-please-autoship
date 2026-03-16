@@ -2,11 +2,12 @@ import * as core from "@actions/core";
 import { WebClient } from "@slack/web-api";
 import * as fs from "fs";
 import * as path from "path";
+import { resolveChannelId } from "./resolveChannel";
 
 async function run(): Promise<void> {
   try {
     const token = core.getInput("slack_token", { required: true });
-    const channelId = core.getInput("channel_id", { required: true });
+    const channelName = core.getInput("channel", { required: true });
     const filePath = core.getInput("file_path", { required: true });
     const fileNameInput = core.getInput("file_name") || "";
     const initialComment = core.getInput("initial_comment") || "";
@@ -18,6 +19,8 @@ async function run(): Promise<void> {
     }
 
     const client = new WebClient(token);
+    const channelId = await resolveChannelId(client, channelName);
+
     const fileStream = fs.createReadStream(resolved);
     const filename = fileNameInput || path.basename(resolved);
 

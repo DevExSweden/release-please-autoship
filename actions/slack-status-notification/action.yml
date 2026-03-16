@@ -10,10 +10,12 @@ inputs:
     required: true
   success-title:
     description: "Title to show on success"
-    required: true
+    required: false
+    default: ""
   failure-title:
     description: "Title to show on failure"
-    required: true
+    required: false
+    default: ""
   fields:
     description: "Fields to include in the message (JSON object with key-value pairs)"
     required: true
