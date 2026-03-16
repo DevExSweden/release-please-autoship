@@ -12,7 +12,7 @@
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@actions/core": "^1.11.1",
+        "@actions/core": "^2.0.2",
         "@slack/web-api": "^7.3.4"
     },
     "devDependencies": {
