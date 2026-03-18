@@ -2,14 +2,15 @@
 #
 # Extract changelog for a specific version from CHANGELOG.md
 #
-# Supports format: "1.19.0 (2026-02-25)" - version at start of line, date in parens
+# Expected format (Release Please):
+#   ## [1.7.0](https://github.com/...) (2026-03-18)
 #
 # Usage:
 #   extract.sh <changelog_file> <version> <output_file>
 #
 # Arguments:
 #   changelog_file - Path to CHANGELOG.md
-#   version        - Version to extract (e.g. 1.19.0)
+#   version        - Version to extract (e.g. 1.7.0)
 #   output_file    - Path for the extracted changelog output
 #
 # Exit codes:
@@ -30,10 +31,10 @@ OUTPUT_FILE="$3"
 
 if [ -f "$CHANGELOG_FILE" ]; then
   awk -v ver="$VERSION" '
-    # Format: "1.19.0 (2026-02-25)" - version at start, date in parens
-    /^[0-9]+\.[0-9]+\.[0-9]+[^ ]* \(/ {
+    /^## \[/ {
       if (found) exit
-      if (index($0, ver " (") == 1) { found=1; print; next }
+      if (index($0, "[" ver "]") > 0) { found=1; print; next }
+      next
     }
     found { print }
   ' "$CHANGELOG_FILE" > "$OUTPUT_FILE"

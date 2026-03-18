@@ -4,7 +4,7 @@ Extract changelog for a specific version from CHANGELOG.md.
 
 ## Supported format
 
-- **Version with date**: `1.19.0 (2026-02-25)` at start of line
+- **Release Please**: `## [1.7.0](https://github.com/...) (2026-03-18)`
 
 ## Inputs
 
