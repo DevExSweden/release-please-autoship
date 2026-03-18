@@ -1,5 +1,5 @@
 name: "Extract Changelog"
-description: "Extract changelog for a specific version from CHANGELOG.md. Format: '1.19.0 (2026-02-25)'."
+description: "Extract changelog for a specific version from a Release Please CHANGELOG.md."
 
 inputs:
   changelog-file-path:

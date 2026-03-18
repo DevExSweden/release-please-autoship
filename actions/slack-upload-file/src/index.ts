@@ -18,15 +18,21 @@ async function run(): Promise<void> {
       throw new Error(`File not found at path: ${resolved}`);
     }
 
+    const fileBuffer = fs.readFileSync(resolved);
+    if (fileBuffer.length === 0) {
+      throw new Error(
+        `File is empty (0 bytes): ${resolved}. Slack rejects empty file uploads.`
+      );
+    }
+
     const client = new WebClient(token);
     const channelId = await resolveChannelId(client, channelName);
 
-    const fileStream = fs.createReadStream(resolved);
     const filename = fileNameInput || path.basename(resolved);
 
     const result = await client.files.uploadV2({
       channel_id: channelId,
-      file: fileStream as any,
+      file: fileBuffer,
       filename,
       initial_comment: initialComment || undefined,
       title: title || undefined
