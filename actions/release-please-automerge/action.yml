@@ -53,6 +53,7 @@ runs:
         private-key: ${{ inputs.github-app-private-key }}
 
     - name: Create version bump PR
+      id: hotfix-pr
       if: ${{ inputs.release-as != '' }}
       shell: bash
       env:
@@ -72,21 +73,25 @@ runs:
         git commit -am "chore: bump version to ${{ inputs.release-as }}"
         git push origin $BRANCH
 
-        gh pr create \
+        PR_NUMBER=$(gh pr create \
           --base ${{ inputs.target-branch }} \
           --head $BRANCH \
           --title "chore: release ${{ inputs.release-as }}" \
-          --body "Hotfix release"
+          --body "Hotfix release" \
+          --json number \
+          --jq '.number')
 
-        
-    - name: Stop after creating hotfix PR
+        echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+    - name: Auto-merge hotfix PR
       if: ${{ inputs.release-as != '' }}
-      shell: bash
-      run: |
-          echo "Hotfix PR created, stopping workflow to wait for merge."
-          exit 0
+      uses: sitoo/mobile-shared-cicd/actions/auto-merge-pr@main
+      with:
+        pr-number: ${{ steps.hotfix-pr.outputs.number }}
+        github-app-token: ${{ steps.app-token.outputs.token }}
 
     - name: Run Release Please
+      if: ${{ inputs.release-as == '' }}
       id: release
       uses: googleapis/release-please-action@v4.4.0
       with:
