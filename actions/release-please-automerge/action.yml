@@ -73,14 +73,13 @@ runs:
         git commit -am "ci: bump version to ${{ inputs.release-as }}"
         git push origin $BRANCH
 
-        PR_NUMBER=$(gh pr create \
+        PR_URL=$(gh pr create \
           --base ${{ inputs.target-branch }} \
           --head $BRANCH \
           --title "chore: release ${{ inputs.release-as }}" \
-          --body "Hotfix release" \
-          --json number \
-          --jq '.number')
+          --body "Hotfix release")
 
+        PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
         echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
     - name: Auto-merge hotfix PR
