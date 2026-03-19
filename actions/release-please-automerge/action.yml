@@ -70,7 +70,7 @@ runs:
         jq '.["."] = "${{ inputs.release-as }}"' ${{ inputs.manifest-file }} > tmp.json
         mv tmp.json ${{ inputs.manifest-file }}
 
-        git commit -am "chore: bump version to ${{ inputs.release-as }}"
+        git commit -am "ci: bump version to ${{ inputs.release-as }}"
         git push origin $BRANCH
 
         PR_NUMBER=$(gh pr create \
