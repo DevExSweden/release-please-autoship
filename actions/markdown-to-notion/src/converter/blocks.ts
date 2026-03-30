@@ -69,11 +69,12 @@ function list(node: List): BlockObjectRequest[] {
 }
 
 function code(node: Code): BlockObjectRequest {
+	const lang = node.lang === "text" || !node.lang ? "plain text" : node.lang;
 	return {
 		object: "block",
 		type: "code",
 		code: {
-			language: node.lang || "text",
+			language: lang,
 			rich_text: chunkText(node.value).map(chunk => ({
 				type: "text",
 				text: { content: chunk }
