@@ -76,12 +76,24 @@ describe("mapNode()", () => {
     expect(blocks[0].type).toBe("numbered_list_item");
   });
 
-  it("maps code blocks", () => {
+  it("maps code blocks with explicit language", () => {
     const node = { type: "code", lang: "ts", value: "const x = 1;" } as any;
     const block = mapNode(node) as any;
     expect(block.type).toBe("code");
     expect(block.code.language).toBe("ts");
     expect(block.code.rich_text[0].text.content).toBe("const x = 1;");
+  });
+
+  it("maps code blocks with lang 'text' to 'plain text' for Notion compatibility", () => {
+    const node = { type: "code", lang: "text", value: "some plain text" } as any;
+    const block = mapNode(node) as any;
+    expect(block.code.language).toBe("plain text");
+  });
+
+  it("maps code blocks with no lang to 'plain text' for Notion compatibility", () => {
+    const node = { type: "code", lang: null, value: "some plain text" } as any;
+    const block = mapNode(node) as any;
+    expect(block.code.language).toBe("plain text");
   });
 
   it("chunks oversized code block value into multiple rich_text entries", () => {
