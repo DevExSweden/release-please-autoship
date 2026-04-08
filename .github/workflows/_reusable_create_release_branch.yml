@@ -40,6 +40,11 @@ on:
         required: false
         type: string
         default: ""
+      postfix-release-branch-name:
+        description: "Postfix to add to the release branch name (e.g. -fix)"
+        required: false
+        type: string
+        default: ""
 
     secrets:
       SLACK_RELEASE_BOT_TOKEN:
@@ -79,14 +84,11 @@ jobs:
       - name: Set version environment variables
         run: |
           echo "RELEASE_VERSION=${{ steps.version.outputs.version }}" >> "$GITHUB_ENV"
-          echo "RELEASE_BRANCH=release-v${{ steps.version.outputs.version }}" >> "$GITHUB_ENV"
+          echo "RELEASE_BRANCH=release-v${{ steps.version.outputs.version }}${{ inputs.postfix-release-branch-name }}" >> "$GITHUB_ENV"
 
       - name: Create release branch
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          RELEASE_BRANCH="release-v$VERSION"
-
-          if git show-ref --quiet refs/remotes/origin/$RELEASE_BRANCH; then
+          if git show-ref --quiet "refs/remotes/origin/$RELEASE_BRANCH"; then
             echo "Release branch already exists: $RELEASE_BRANCH"
             exit 0
           fi
@@ -112,9 +114,9 @@ jobs:
           file_name: "CHANGELOG-v${{ steps.version.outputs.version }}.md"
           title: "Release v${{ steps.version.outputs.version }} Changelog"
           initial_comment: |
-            ✅ Release Branch for v${{ steps.version.outputs.version }} Ready
+            ✅ Release Branch release-v${{ steps.version.outputs.version }}${{ inputs.postfix-release-branch-name }} Ready
             From: ${{ inputs.target-branch }}
-            Release Branch: release-v${{ steps.version.outputs.version }}
+            Release Branch: release-v${{ steps.version.outputs.version }}${{ inputs.postfix-release-branch-name }}
             Repository: ${{ github.repository }}
             Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
