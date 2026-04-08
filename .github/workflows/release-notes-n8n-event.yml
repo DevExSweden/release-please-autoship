@@ -22,7 +22,7 @@ jobs:
 
       - name: Install Playwright Chromium
         run: |
-          npx --yes playwright install --with-deps chromium
+          npx --yes playwright@1.58.0 install --with-deps chromium
 
       - name: Convert Notion page to PDF
         id: convert-notion-page
