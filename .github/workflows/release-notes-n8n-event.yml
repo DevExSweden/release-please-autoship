@@ -42,7 +42,7 @@ jobs:
         uses: sitoo/mobile-shared-cicd/actions/slack-upload-file@main
         with:
           slack_token: ${{ secrets.POS_RELEASE_NOTES_TOKEN }}
-          channel_id: ${{ vars.RELEASE_NOTES_SLACK_CHANNEL }}
+          channel: ${{ vars.RELEASE_NOTES_SLACK_CHANNEL }}
           file_path: ${{ steps.convert-notion-page.outputs.pdf_path }}
           file_name: ${{ steps.convert-notion-page.outputs.pdf_file_name }}
           initial_comment: PDF attached for ${{ steps.convert-notion-page.outputs.page_title }}
