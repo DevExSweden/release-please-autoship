@@ -7,17 +7,18 @@ inputs:
     required: true
   current-tag:
     description: "Current tag"
-    required: true
+    required: false
+    default: ""
   previous-tag:
-    description: "Previous tag"
-    required: true
+    description: "Previous tag. If omitted, falls back to the latest tag before current-tag."
+    required: false
+    default: ""
   github-token:
     description: "PAT with copilot-requests scope for Copilot CLI"
     required: true
   artifact-name:
     description: "Name of the uploaded release notes artifact"
     required: true
-  
 
 outputs:
   artifact-url:
