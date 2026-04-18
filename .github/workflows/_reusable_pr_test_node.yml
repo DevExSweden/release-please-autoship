@@ -1,0 +1,72 @@
+name: Reusable PR Test Node.js Actions
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Detect changes in Node.js actions
+        id: changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        with:
+          filters: |
+            markdown_to_notion:
+              - 'actions/markdown-to-notion/**'
+            publish_to_notion_db:
+              - 'actions/publish-to-notion-db/**'
+            notion_to_pdf:
+              - 'actions/notion-to-pdf/**'
+            slack_upload_file:
+              - 'actions/slack-upload-file/**'
+
+      - name: Setup Node.js
+        if: |
+          steps.changes.outputs.markdown_to_notion == 'true' ||
+          steps.changes.outputs.publish_to_notion_db == 'true' ||
+          steps.changes.outputs.notion_to_pdf == 'true' ||
+          steps.changes.outputs.slack_upload_file == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            actions/markdown-to-notion/package-lock.json
+            actions/publish-to-notion-db/package-lock.json
+            actions/notion-to-pdf/package-lock.json
+            actions/slack-upload-file/package-lock.json
+
+      - name: Test markdown-to-notion action
+        if: steps.changes.outputs.markdown_to_notion == 'true'
+        run: |
+          cd actions/markdown-to-notion
+          npm ci
+          npm test
+
+      - name: Test publish-to-notion-db action
+        if: steps.changes.outputs.publish_to_notion_db == 'true'
+        run: |
+          cd actions/publish-to-notion-db
+          npm ci
+          npm test
+
+      - name: Test notion-to-pdf action
+        if: steps.changes.outputs.notion_to_pdf == 'true'
+        run: |
+          cd actions/notion-to-pdf
+          npm ci
+          npm test
+
+      - name: Test slack-upload-file action
+        if: steps.changes.outputs.slack_upload_file == 'true'
+        run: |
+          cd actions/slack-upload-file
+          npm ci
+          npm test

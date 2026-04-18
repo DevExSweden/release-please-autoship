@@ -1,0 +1,24 @@
+name: Reusable PR Lint
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Run yamllint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: '.'
+          config_file: '.yamllint.yml'
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2.1.1

@@ -1,0 +1,60 @@
+name: "Email Release Notification"
+description: "Send a branded HTML email to customers with a Google Drive link and release notes PDF."
+
+inputs:
+  version:
+    description: "The new app version to announce (e.g. 1.4.2)"
+    required: true
+  app-name:
+    description: "Name of the app shown in the email subject and body"
+    required: true
+  recipient-emails:
+    description: >
+      Comma-separated addresses that receive the message on BCC only (they cannot see each other).
+      SendGrid still requires one To address; the action uses the sender email as that envelope To.
+    required: true
+  sender-email:
+    description: >
+      From address — must match exactly a Single Sender or domain you verified in SendGrid
+      (Settings → Sender Authentication). Whitespace in repo variables is trimmed.
+    required: true
+  sender-name:
+    description: "Display name shown in the From field"
+    required: false
+    default: "Mobile App Team"
+  sendgrid-api-key:
+    description: "SendGrid API key with Mail Send permission"
+    required: true
+  google-drive-url:
+    description: "Google Drive folder URL containing the release assets and release notes PDF"
+    required: true
+  template:
+    description: >
+      Name of the HTML template file (without extension) located in the templates/ directory.
+      Use 'apk-distribution' for Android APK builds shared via Google Drive,
+      or 'private-app' for apps distributed through a private/enterprise app store.
+    required: false
+    default: "apk-distribution"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up uv
+      uses: astral-sh/setup-uv@c0b7f63f921ff91255da381cfafb949f89803448
+      with:
+        python-version: "3.11"
+
+    - name: Send new-version email notification
+      shell: bash
+      env:
+        SENDGRID_API_KEY: ${{ inputs.sendgrid-api-key }}
+      run: |
+        uv run --directory "${{ github.action_path }}" \
+          python src/send_email.py \
+          --template   "${{ github.action_path }}/templates/${{ inputs.template }}.html" \
+          --app-name   "${{ inputs.app-name }}" \
+          --version    "${{ inputs.version }}" \
+          --recipients "${{ inputs.recipient-emails }}" \
+          --sender     "${{ inputs.sender-email }}" \
+          --sender-name "${{ inputs.sender-name }}" \
+          --drive-url  "${{ inputs.google-drive-url }}"

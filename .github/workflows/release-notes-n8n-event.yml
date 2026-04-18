@@ -42,6 +42,7 @@ jobs:
           path: ${{ steps.convert-notion-page.outputs.pdf_path }}
 
       - name: Upload release notes to Google Drive
+        id: upload-to-drive
         uses: sitoo/mobile-shared-cicd/actions/upload-to-google-drive@main
         with:
           file-path: ${{ steps.convert-notion-page.outputs.pdf_path }}
@@ -58,4 +59,3 @@ jobs:
           file_path: ${{ steps.convert-notion-page.outputs.pdf_path }}
           file_name: ${{ steps.convert-notion-page.outputs.pdf_file_name }}
           initial_comment: PDF attached for ${{ steps.convert-notion-page.outputs.page_title }}
-

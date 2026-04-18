@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{APP_NAME}} {{VERSION}} – New Version Available</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    }
+
+    .wrapper {
+      width: 100%;
+      background-color: #f4f6f9;
+      padding: 40px 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 40px 48px 36px;
+      text-align: center;
+    }
+
+    .header-badge {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.12);
+      color: #a8d8ea;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      color: #ffffff;
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0 0 8px;
+      line-height: 1.3;
+    }
+
+    .version-pill {
+      display: inline-block;
+      background-color: #e94560;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 8px 24px;
+      border-radius: 30px;
+      margin-top: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Body */
+    .body {
+      padding: 40px 48px;
+    }
+
+    .body p {
+      color: #4a4a6a;
+      font-size: 16px;
+      line-height: 1.7;
+      margin: 0 0 20px;
+    }
+
+    /* Google Drive card */
+    .drive-card {
+      background: linear-gradient(135deg, #f0f7ff 0%, #e8f4fd 100%);
+      border: 1px solid #c8dff5;
+      border-radius: 10px;
+      padding: 28px 32px;
+      margin: 28px 0;
+      text-align: center;
+    }
+
+    .drive-card-title {
+      color: #1a1a2e;
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+
+    .drive-card-subtitle {
+      color: #5a6a8a;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 22px;
+    }
+
+    .btn-drive {
+      display: inline-block;
+      background-color: #1a73e8;
+      color: #ffffff !important;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px 32px;
+      border-radius: 8px;
+    }
+
+    .drive-contents {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .drive-item {
+      display: inline-block;
+      color: #5a6a8a;
+      font-size: 13px;
+      padding: 6px 14px;
+      background-color: #ffffff;
+      border: 1px solid #d4e6f7;
+      border-radius: 20px;
+    }
+
+    .drive-item::before {
+      content: "✓  ";
+      color: #1a73e8;
+      font-weight: 700;
+    }
+
+    /* Divider */
+    .divider {
+      border: none;
+      border-top: 1px solid #eef0f6;
+      margin: 28px 0;
+    }
+
+    /* Footer */
+    .footer {
+      background-color: #f8f9fc;
+      padding: 24px 48px;
+      text-align: center;
+      border-top: 1px solid #eef0f6;
+    }
+
+    .footer p {
+      color: #9999bb;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0 0 4px;
+    }
+
+    @media only screen and (max-width: 640px) {
+      .container { border-radius: 0; }
+      .header, .body, .footer { padding-left: 24px; padding-right: 24px; }
+      .header h1 { font-size: 21px; }
+      .btn-drive { display: block; }
+      .drive-contents { flex-direction: column; align-items: center; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+
+      <!-- Header -->
+      <div class="header">
+        <div class="header-badge">New Release</div>
+        <h1>{{APP_NAME}} has been updated</h1>
+        <div class="version-pill">Version {{VERSION}}</div>
+      </div>
+
+      <!-- Body -->
+      <div class="body">
+        <p>Hi there,</p>
+        <p>
+          <strong>{{APP_NAME}} {{VERSION}}</strong> is now available.
+          You can find the installation file and the release notes on Google Drive using the link below.
+        </p>
+
+        <!-- Google Drive card -->
+        <div class="drive-card">
+          <div class="drive-card-title">Available on Google Drive</div>
+          <div class="drive-card-subtitle">The following files are ready in the shared folder:</div>
+          <a href="{{GOOGLE_DRIVE_URL}}" class="btn-drive">&#x1F4C2;&nbsp; Open Google Drive folder</a>
+          <div class="drive-contents">
+            <span class="drive-item">APK installation file</span>
+            <span class="drive-item">Release notes (PDF)</span>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <p style="font-size: 14px; color: #9999bb; margin: 0;">
+          If you have any questions or need assistance with the update, please reach out to your account manager.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p><strong>{{SENDER_NAME}}</strong></p>
+        <p>You are receiving this email because you are subscribed to release notifications for {{APP_NAME}}.</p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

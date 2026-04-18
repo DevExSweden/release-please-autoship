@@ -1,0 +1,44 @@
+name: Reusable PR Test Python Actions
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Detect changes in Python actions
+        id: changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        with:
+          filters: |
+            email_release_notification:
+              - 'actions/email-release-notification/**'
+            upload_to_google_drive:
+              - 'actions/upload-to-google-drive/**'
+
+      - name: Set up uv
+        if: |
+          steps.changes.outputs.email_release_notification == 'true' ||
+          steps.changes.outputs.upload_to_google_drive == 'true'
+        uses: astral-sh/setup-uv@c0b7f63f921ff91255da381cfafb949f89803448
+        with:
+          python-version: "3.11"
+
+      - name: Test email-release-notification action
+        if: steps.changes.outputs.email_release_notification == 'true'
+        run: |
+          cd actions/email-release-notification
+          uv run --group dev pytest --cov --cov-report=term-missing
+
+      - name: Test upload-to-google-drive action
+        if: steps.changes.outputs.upload_to_google_drive == 'true'
+        run: |
+          cd actions/upload-to-google-drive
+          uv run --group dev pytest --cov --cov-report=term-missing
