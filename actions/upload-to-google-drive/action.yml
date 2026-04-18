@@ -1,0 +1,59 @@
+name: 'Upload File to Google Drive'
+description: >
+  Uploads a file to a Google Drive folder.
+  Authenticates via Workload Identity Federation — no long-lived credentials required.
+
+inputs:
+  file-path:
+    description: 'Local path to the file to upload'
+    required: true
+  gcp-project-number:
+    description: 'GCP project number (used to construct the Workload Identity Provider path)'
+    required: true
+  service-account:
+    description: 'Email of the service account to impersonate, e.g. drive-ci@my-project.iam.gserviceaccount.com'
+    required: true
+  folder-id:
+    description: 'Google Drive folder ID to upload the file into'
+    required: true
+  file-name:
+    description: 'Override the uploaded filename. Defaults to the original filename.'
+    required: false
+    default: ''
+  subfolder:
+    description: 'Name of a subfolder to create (if needed) inside the target folder, e.g. "1.5.1"'
+    required: false
+    default: ''
+
+outputs:
+  file-id:
+    description: 'Google Drive file ID of the uploaded file'
+    value: ${{ steps.upload.outputs.file-id }}
+  web-view-link:
+    description: 'Google Drive web view link for the uploaded file'
+    value: ${{ steps.upload.outputs.web-view-link }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Authenticate to Google Cloud (WIF)
+      id: auth
+      uses: google-github-actions/auth@v3
+      with:
+        workload_identity_provider: projects/${{ inputs.gcp-project-number }}/locations/global/workloadIdentityPools/github-pool/providers/github
+        service_account: ${{ inputs.service-account }}
+
+    - name: Install Python dependencies
+      shell: bash
+      run: pip3 install --quiet google-auth google-api-python-client
+
+    - name: Upload file to Google Drive
+      id: upload
+      shell: bash
+      env:
+        FILE_PATH: ${{ inputs.file-path }}
+        FOLDER_ID: ${{ inputs.folder-id }}
+        FILE_NAME: ${{ inputs.file-name }}
+        SUBFOLDER: ${{ inputs.subfolder }}
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }} 
+      run: python3 "${{ github.action_path }}/src/upload_to_drive.py"

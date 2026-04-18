@@ -47,6 +47,8 @@ jobs:
               - 'actions/notion-to-pdf/**'
             slack_upload_file:
               - 'actions/slack-upload-file/**'
+            email_release_notification:
+              - 'actions/email-release-notification/**'
 
       - name: Setup Node.js
         if: steps.changes.outputs.actions == 'true'
@@ -87,3 +89,15 @@ jobs:
           cd actions/slack-upload-file
           npm ci
           npm test
+
+      - name: Set up uv
+        if: steps.changes.outputs.email_release_notification == 'true'
+        uses: astral-sh/setup-uv@c0b7f63f921ff91255da381cfafb949f89803448
+        with:
+          python-version: "3.11"
+
+      - name: Test email-release-notification action
+        if: steps.changes.outputs.email_release_notification == 'true'
+        run: |
+          cd actions/email-release-notification
+          uv run --group dev pytest --cov --cov-report=term-missing

@@ -1,0 +1,53 @@
+name: "Email Release Notification"
+description: "Send a branded HTML email to customers with a Google Drive link to the APK and release notes PDF."
+
+inputs:
+  version:
+    description: "The new app version to announce (e.g. 1.4.2)"
+    required: true
+  app-name:
+    description: "Name of the app shown in the email subject and body"
+    required: true
+  recipient-emails:
+    description: >
+      Comma-separated addresses that receive the message on BCC only (they cannot see each other).
+      SendGrid still requires one To address; the action uses the sender email as that envelope To.
+    required: true
+  sender-email:
+    description: >
+      From address — must match exactly a Single Sender or domain you verified in SendGrid
+      (Settings → Sender Authentication). Whitespace in repo variables is trimmed.
+    required: true
+  sender-name:
+    description: "Display name shown in the From field"
+    required: false
+    default: "Mobile App Team"
+  sendgrid-api-key:
+    description: "SendGrid API key with Mail Send permission"
+    required: true
+  google-drive-url:
+    description: "Google Drive folder URL containing the APK and release notes PDF"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up uv
+      uses: astral-sh/setup-uv@c0b7f63f921ff91255da381cfafb949f89803448
+      with:
+        python-version: "3.11"
+
+    - name: Send new-version email notification
+      shell: bash
+      env:
+        SENDGRID_API_KEY: ${{ inputs.sendgrid-api-key }}
+      run: |
+        uv run --directory "${{ github.action_path }}" \
+          python src/send_email.py \
+          --template   "${{ github.action_path }}/templates/email.html" \
+          --app-name   "${{ inputs.app-name }}" \
+          --version    "${{ inputs.version }}" \
+          --recipients "${{ inputs.recipient-emails }}" \
+          --sender     "${{ inputs.sender-email }}" \
+          --sender-name "${{ inputs.sender-name }}" \
+          --drive-url  "${{ inputs.google-drive-url }}"
