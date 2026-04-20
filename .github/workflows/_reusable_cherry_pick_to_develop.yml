@@ -1,0 +1,104 @@
+name: Reusable Cherry-pick to Develop
+
+on:
+  workflow_call:
+    inputs:
+      merge-commit-sha:
+        description: "SHA of the merge commit to cherry-pick (github.event.pull_request.merge_commit_sha)"
+        required: true
+        type: string
+
+      pr-number:
+        description: "Number of the merged PR (github.event.pull_request.number)"
+        required: true
+        type: number
+
+      pr-title:
+        description: "Title of the merged PR (github.event.pull_request.title)"
+        required: true
+        type: string
+
+      source-branch:
+        description: "Release branch the PR was merged into (github.event.pull_request.base.ref)"
+        required: true
+        type: string
+
+      target-branch:
+        description: "Branch to cherry-pick into"
+        required: false
+        type: string
+        default: develop
+
+      gh-app-id:
+        description: "GitHub App ID for generating a token that can bypass branch protection"
+        required: false
+        type: string
+        default: ""
+
+    secrets:
+      GH_APP_PRIVATE_KEY:
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cherry-pick:
+    runs-on: ubuntu-latest
+
+    env:
+      MERGE_COMMIT: ${{ inputs.merge-commit-sha }}
+      PR_NUMBER: ${{ inputs.pr-number }}
+      PR_TITLE: ${{ inputs.pr-title }}
+      SOURCE_BRANCH: ${{ inputs.source-branch }}
+      TARGET_BRANCH: ${{ inputs.target-branch }}
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        if: inputs.gh-app-id != ''
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ inputs.gh-app-id }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      - name: Set up git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create cherry-pick branch and apply changes
+        id: cherry-pick
+        run: |
+          CHERRY_PICK_BRANCH="cherry-pick/${SOURCE_BRANCH}/pr-${PR_NUMBER}"
+          echo "cherry-pick-branch=${CHERRY_PICK_BRANCH}" >> "$GITHUB_OUTPUT"
+
+          git fetch origin "${TARGET_BRANCH}"
+          git checkout -b "${CHERRY_PICK_BRANCH}" "origin/${TARGET_BRANCH}"
+
+          PARENT_COUNT=$(git cat-file -p "${MERGE_COMMIT}" | grep -c "^parent")
+
+          if [ "${PARENT_COUNT}" -gt 1 ]; then
+            git cherry-pick -x -m 1 "${MERGE_COMMIT}"
+          else
+            git cherry-pick -x "${MERGE_COMMIT}"
+          fi
+
+          git push origin "${CHERRY_PICK_BRANCH}"
+
+      - name: Create PR to develop
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
+        run: |
+          gh pr create \
+            --base "${TARGET_BRANCH}" \
+            --head "${{ steps.cherry-pick.outputs.cherry-pick-branch }}" \
+            --title "cherry-pick(${SOURCE_BRANCH}): ${PR_TITLE}" \
+            --body "Automated cherry-pick of #${PR_NUMBER} from \`${SOURCE_BRANCH}\` to \`${TARGET_BRANCH}\`."
