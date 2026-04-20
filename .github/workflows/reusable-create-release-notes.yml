@@ -29,27 +29,7 @@ permissions:
   contents: read
 
 jobs:
-  determine-tags:
-    runs-on: ubuntu-latest
-    outputs:
-      current_tag: ${{ steps.tags.outputs.current_tag }}
-      previous_tag: ${{ steps.tags.outputs.previous_tag }}
-    steps:
-      - name: Determine current and previous tags
-        id: tags
-        run: |
-          if [ -n "${{ inputs.current_tag }}" ]; then
-            echo "current_tag=${{ inputs.current_tag }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "current_tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          fi
-          
-          if [ -n "${{ inputs.previous_tag }}" ]; then
-            echo "previous_tag=${{ inputs.previous_tag }}" >> "$GITHUB_OUTPUT"
-          fi
-
   generate-release-notes:
-    needs: determine-tags
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -170,7 +150,7 @@ jobs:
           body: ${{ steps.notion_blocks.outputs.blocks_json }}
 
   notify-slack:
-    needs: [determine-tags, generate-release-notes]
+    needs: [generate-release-notes]
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack with release notes link
@@ -213,7 +193,7 @@ jobs:
 
   notify-slack-failure:
     if: failure()
-    needs: [determine-tags, generate-release-notes]
+    needs: [generate-release-notes]
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
