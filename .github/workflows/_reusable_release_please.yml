@@ -58,7 +58,7 @@ jobs:
 
       - name: Run Release Please with auto-merge
         id: release
-        uses: sitoo/mobile-shared-cicd/actions/release-please-automerge@main
+        uses: sitoo/mobile-shared-cicd/actions/release-please-automerge@release_as_clean
         with:
           target-branch: ${{ inputs.target-branch }}
           github-app-id: ${{ inputs.pos-release-bot-app-id }}
