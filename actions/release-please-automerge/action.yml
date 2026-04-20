@@ -52,59 +52,29 @@ runs:
         app-id: ${{ inputs.github-app-id }}
         private-key: ${{ inputs.github-app-private-key }}
 
-    - name: Create version bump PR
-      id: hotfix-pr
+    - name: Inject release-as into config.json on target branch
       if: ${{ inputs.release-as != '' }}
       shell: bash
       env:
         GH_TOKEN: ${{ steps.app-token.outputs.token }}
       run: |
-        BRANCH="release-please--branches--${{ inputs.target-branch }}"
-
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
         git fetch origin ${{ inputs.target-branch }}
-        git checkout -b $BRANCH origin/${{ inputs.target-branch }}
+        git checkout ${{ inputs.target-branch }}
 
-        # Update manifest.json
-        jq '.["."] = "${{ inputs.release-as }}"' ${{ inputs.manifest-file }} > tmp.json
-        mv tmp.json ${{ inputs.manifest-file }}
+        # Inject release-as per package so release-please uses it when it fetches config from GitHub
+        jq --arg v "${{ inputs.release-as }}" \
+          '.packages |= with_entries(.value["release-as"] = $v)' \
+          ${{ inputs.config-file }} > /tmp/config-patched.json
+        mv /tmp/config-patched.json ${{ inputs.config-file }}
 
-        # Update extra-files with x-release-please-version marker
-        jq -r '.packages["."]["extra-files"][]? | if type == "object" then .path else . end' ${{ inputs.config-file }} | while read -r file_path; do
-          if [ -f "$file_path" ]; then
-            sed -i "s/[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\( .*x-release-please-version\)/${{ inputs.release-as }}\1/" "$file_path"
-          fi
-        done
-
-        if git diff --quiet; then
-          echo "No changes — files already at ${{ inputs.release-as }}, skipping PR creation."
-          exit 0
-        fi
-
-        git commit -am "chore(release): release ${{ inputs.release-as }}"
-        git push origin $BRANCH
-
-        PR_NUMBER=$(gh pr create \
-          --base ${{ inputs.target-branch }} \
-          --head $BRANCH \
-          --title "chore(release): release ${{ inputs.release-as }}" \
-          --body "Release ${{ inputs.release-as }}" \
-          --json number \
-          --jq '.number')
-
-        echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-
-    - name: Auto-merge hotfix PR
-      if: ${{ inputs.release-as != '' && steps.hotfix-pr.outputs.number != '' }}
-      uses: sitoo/mobile-shared-cicd/actions/auto-merge-pr@release_as_clean
-      with:
-        pr-number: ${{ steps.hotfix-pr.outputs.number }}
-        github-app-token: ${{ steps.app-token.outputs.token }}
+        git add ${{ inputs.config-file }}
+        git commit -m "ci: set release-as ${{ inputs.release-as }}"
+        git push origin ${{ inputs.target-branch }}
 
     - name: Run Release Please
-      if: ${{ inputs.release-as == '' }}
       id: release
       uses: googleapis/release-please-action@v4.4.0
       with:
@@ -114,6 +84,23 @@ runs:
         config-file: ${{ inputs.config-file }}
         manifest-file: ${{ inputs.manifest-file }}
         skip-labeling: true
+
+    - name: Remove release-as from config.json after release-please PR is created
+      if: ${{ inputs.release-as != '' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        git fetch origin ${{ inputs.target-branch }}
+        git checkout ${{ inputs.target-branch }}
+
+        jq 'del(.packages[]["release-as"])' \
+          ${{ inputs.config-file }} > /tmp/config-clean.json
+        mv /tmp/config-clean.json ${{ inputs.config-file }}
+
+        git add ${{ inputs.config-file }}
+        git commit -m "ci: remove release-as after version bump" || true
+        git push origin ${{ inputs.target-branch }}
 
     - name: Extract PR number
       id: pr_number
