@@ -52,45 +52,20 @@ runs:
         app-id: ${{ inputs.github-app-id }}
         private-key: ${{ inputs.github-app-private-key }}
 
-    - name: Create version bump PR
-      id: hotfix-pr
+    - name: Inject release-as into config (manifest mode workaround)
       if: ${{ inputs.release-as != '' }}
       shell: bash
       env:
-        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        RELEASE_AS: ${{ inputs.release-as }}
+        CONFIG_FILE: ${{ inputs.config-file }}
       run: |
-        BRANCH="hotfix/version-${{ inputs.release-as }}"
-
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-
-        git fetch origin ${{ inputs.target-branch }}
-        git checkout -b $BRANCH origin/${{ inputs.target-branch }}
-
-        jq '.["."] = "${{ inputs.release-as }}"' ${{ inputs.manifest-file }} > tmp.json
-        mv tmp.json ${{ inputs.manifest-file }}
-
-        git commit -am "ci: bump version to ${{ inputs.release-as }}"
-        git push origin $BRANCH
-
-        PR_URL=$(gh pr create \
-          --base ${{ inputs.target-branch }} \
-          --head $BRANCH \
-          --title "chore: release ${{ inputs.release-as }}" \
-          --body "Hotfix release")
-
-        PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-        echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-
-    - name: Auto-merge hotfix PR
-      if: ${{ inputs.release-as != '' }}
-      uses: sitoo/mobile-shared-cicd/actions/auto-merge-pr@main
-      with:
-        pr-number: ${{ steps.hotfix-pr.outputs.number }}
-        github-app-token: ${{ steps.app-token.outputs.token }}
+        # release-please-action v4 ignores the top-level release-as input in manifest mode.
+        # Injecting it into each package entry in the config file is the supported workaround.
+        jq --arg v "$RELEASE_AS" '.packages |= with_entries(.value["release-as"] = $v)' \
+          "$CONFIG_FILE" > /tmp/rp-config-patched.json
+        mv /tmp/rp-config-patched.json "$CONFIG_FILE"
 
     - name: Run Release Please
-      if: ${{ inputs.release-as == '' }}
       id: release
       uses: googleapis/release-please-action@v4.4.0
       with:
