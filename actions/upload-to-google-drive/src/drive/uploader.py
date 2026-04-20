@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import mimetypes
 
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+
+logger = logging.getLogger(__name__)
 
 _CHUNK_SIZE = 10 * 1024 * 1024  # 10 MB
 _FOLDER_MIME = "application/vnd.google-apps.folder"
@@ -36,7 +39,7 @@ def find_or_create_folder(service, name: str, parent_id: str) -> str:
     files = results.get("files", [])
     if files:
         folder_id = files[0]["id"]
-        print(f"  Found existing folder '{name}' (id={folder_id})")
+        logger.info("Found existing folder '%s' (id=%s)", name, folder_id)
         return folder_id
 
     folder_metadata = {
@@ -50,7 +53,7 @@ def find_or_create_folder(service, name: str, parent_id: str) -> str:
         .execute()
     )
     folder_id = folder["id"]
-    print(f"  Created folder '{name}' (id={folder_id})")
+    logger.info("Created folder '%s' (id=%s)", name, folder_id)
     return folder_id
 
 
@@ -102,12 +105,12 @@ def upload_file(
 
     target_folder_id = folder_id
     if subfolder:
-        print(f"Resolving subfolder '{subfolder}' …")
+        logger.info("Resolving subfolder '%s' …", subfolder)
         target_folder_id = find_or_create_folder(service, subfolder, folder_id)
 
     existing = find_existing_file(service, file_name, target_folder_id)
     if existing:
-        print(f"Skipping upload – '{file_name}' already exists (id={existing['id']})")
+        logger.info("Skipping upload – '%s' already exists (id=%s)", file_name, existing["id"])
         return existing
 
     mime_type, _ = mimetypes.guess_type(file_path)
@@ -125,7 +128,7 @@ def upload_file(
         resumable=True,
     )
 
-    print(f"Uploading '{file_name}' to Drive folder {target_folder_id} …")
+    logger.info("Uploading '%s' to Drive folder %s …", file_name, target_folder_id)
     request = service.files().create(
         body=file_metadata,
         media_body=media,
@@ -137,7 +140,7 @@ def upload_file(
     while response is None:
         status, response = request.next_chunk()
         if status:
-            print(f"  {int(status.progress() * 100)}% …")
+            logger.debug("%d%% …", int(status.progress() * 100))
 
-    print(f"  Done – file ID: {response['id']}")
+    logger.info("Done – file ID: %s", response["id"])
     return response
