@@ -23,10 +23,6 @@ inputs:
   github-app-private-key:
     description: "GitHub App private key"
     required: true
-  release-as:
-    description: "Force release as this version (e.g. 1.2.3)"
-    required: false
-    default: ""
 
 outputs:
   prs_created:
@@ -52,45 +48,7 @@ runs:
         app-id: ${{ inputs.github-app-id }}
         private-key: ${{ inputs.github-app-private-key }}
 
-    - name: Create version bump PR
-      id: hotfix-pr
-      if: ${{ inputs.release-as != '' }}
-      shell: bash
-      env:
-        GH_TOKEN: ${{ steps.app-token.outputs.token }}
-      run: |
-        BRANCH="hotfix/version-${{ inputs.release-as }}"
-
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-
-        git fetch origin ${{ inputs.target-branch }}
-        git checkout -b $BRANCH origin/${{ inputs.target-branch }}
-
-        jq '.["."] = "${{ inputs.release-as }}"' ${{ inputs.manifest-file }} > tmp.json
-        mv tmp.json ${{ inputs.manifest-file }}
-
-        git commit -am "ci: bump version to ${{ inputs.release-as }}"
-        git push origin $BRANCH
-
-        PR_URL=$(gh pr create \
-          --base ${{ inputs.target-branch }} \
-          --head $BRANCH \
-          --title "chore: release ${{ inputs.release-as }}" \
-          --body "Hotfix release")
-
-        PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-        echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-
-    - name: Auto-merge hotfix PR
-      if: ${{ inputs.release-as != '' }}
-      uses: sitoo/mobile-shared-cicd/actions/auto-merge-pr@main
-      with:
-        pr-number: ${{ steps.hotfix-pr.outputs.number }}
-        github-app-token: ${{ steps.app-token.outputs.token }}
-
     - name: Run Release Please
-      if: ${{ inputs.release-as == '' }}
       id: release
       uses: googleapis/release-please-action@v4.4.0
       with:

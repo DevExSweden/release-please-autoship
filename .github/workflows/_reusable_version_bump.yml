@@ -1,0 +1,108 @@
+name: Reusable Version Bump
+
+on:
+  workflow_call:
+    inputs:
+      target-branch:
+        description: "Branch to bump the version on"
+        required: true
+        type: string
+
+      version:
+        description: "Version to bump to (e.g. 1.2.3)"
+        required: true
+        type: string
+
+      pos-release-bot-app-id:
+        description: "GitHub App ID for the POS Release Bot"
+        required: true
+        type: string
+
+      config-file:
+        description: "Path to release-please config file (used to find extra-files)"
+        required: false
+        type: string
+        default: ".github/release-please-config.json"
+
+      manifest-file:
+        description: "Path to release-please manifest file"
+        required: false
+        type: string
+        default: ".github/.release-please-manifest.json"
+
+    secrets:
+      GH_APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  version-bump:
+    if: github.ref_name == inputs.target-branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2.2.0
+        with:
+          app-id: ${{ inputs.pos-release-bot-app-id }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Create version bump PR
+        id: bump-pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          BRANCH="release-please--branches--${{ inputs.target-branch }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin ${{ inputs.target-branch }}
+          git checkout -b $BRANCH origin/${{ inputs.target-branch }}
+
+          # Update manifest.json
+          jq '.["."] = "${{ inputs.version }}"' ${{ inputs.manifest-file }} > /tmp/manifest.json
+          mv /tmp/manifest.json ${{ inputs.manifest-file }}
+
+          # Update extra-files with x-release-please-version marker (e.g. SitooAppVersion.xcconfig)
+          jq -r '.packages["."]["extra-files"][]? | if type == "object" then .path else . end' \
+            ${{ inputs.config-file }} | while read -r file_path; do
+            if [ -f "$file_path" ]; then
+              sed -i "s/[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\( .*x-release-please-version\)/${{ inputs.version }}\1/" "$file_path"
+            fi
+          done
+
+          if git diff --quiet; then
+            echo "No changes — already at ${{ inputs.version }}, skipping PR."
+            exit 0
+          fi
+
+          git commit -am "ci: Hotfix version bump:(${{ inputs.target-branch }}): release ${{ inputs.version }}"
+          git push origin $BRANCH
+
+          PR_NUMBER=$(gh pr create \
+            --base ${{ inputs.target-branch }} \
+            --head $BRANCH \
+            --title "chore(${{ inputs.target-branch }}): release ${{ inputs.version }}" \
+            --body "Version bump to ${{ inputs.version }}" \
+            --json number \
+            --jq '.number')
+
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Auto-merge version bump PR
+        if: ${{ steps.bump-pr.outputs.number != '' }}
+        uses: sitoo/mobile-shared-cicd/actions/auto-merge-pr@main
+        with:
+          pr-number: ${{ steps.bump-pr.outputs.number }}
+          github-app-token: ${{ steps.app-token.outputs.token }}

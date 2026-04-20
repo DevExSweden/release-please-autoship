@@ -37,9 +37,14 @@ runs:
         MERGE_METHOD: ${{ inputs.merge-method }}
         DELETE_BRANCH: ${{ inputs.delete-branch }}
       run: |
-        ARGS="--auto --${MERGE_METHOD}"
+        ARGS="--${MERGE_METHOD}"
         if [[ "${DELETE_BRANCH}" == "true" ]]; then
           ARGS="${ARGS} --delete-branch"
         fi
         echo "Enabling auto-merge for PR #${PR_NUMBER} (${MERGE_METHOD})"
-        gh pr merge ${ARGS} "${PR_NUMBER}"
+        if gh pr merge --auto ${ARGS} "${PR_NUMBER}"; then
+          echo "Auto-merge enabled."
+        else
+          echo "Auto-merge not available (branch protection not configured), merging directly."
+          gh pr merge ${ARGS} "${PR_NUMBER}"
+        fi

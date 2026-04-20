@@ -105,7 +105,7 @@ jobs:
           version: ${{ steps.version.outputs.version }}
 
       - name: Notify Slack (with changelog file)
-        if: success()
+        if: success() && steps.extract-changelog.outputs.has_content == 'true'
         uses: sitoo/mobile-shared-cicd/actions/slack-upload-file@main
         with:
           slack_token: ${{ secrets.SLACK_RELEASE_BOT_TOKEN }}
@@ -121,6 +121,24 @@ jobs:
             Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
             Next: Full changelog attached as file.
+
+      - name: Notify Slack (no changelog)
+        if: success() && steps.extract-changelog.outputs.has_content != 'true'
+        uses: sitoo/mobile-shared-cicd/actions/slack-status-notification@main
+        with:
+          status: success
+          channel: ${{ inputs.slack-channel-success }}
+          success-title: "Release Branch release-v${{ steps.version.outputs.version }}${{ inputs.postfix-release-branch-name }} Ready"
+          fields: |
+            {
+              "From": "${{ inputs.target-branch }}",
+              "Release Branch": "release-v${{ steps.version.outputs.version }}${{ inputs.postfix-release-branch-name }}",
+              "Version": "${{ steps.version.outputs.version }}",
+              "Repository": "${{ github.repository }}",
+              "Details": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+          success-footer: "No changelog entries found for this version."
+          slack-token: ${{ secrets.SLACK_RELEASE_BOT_TOKEN }}
 
       - name: Notify Slack (failure only)
         if: failure()
