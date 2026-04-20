@@ -21,7 +21,7 @@ inputs:
   sender-name:
     description: "Display name shown in the From field"
     required: false
-    default: "Mobile App Team"
+    default: "Sitoo Mobile App Team"
   sendgrid-api-key:
     description: "SendGrid API key with Mail Send permission"
     required: true
