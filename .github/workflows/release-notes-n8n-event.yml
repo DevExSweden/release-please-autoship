@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   handle:
@@ -18,7 +19,9 @@ jobs:
           echo "Payload:"
           echo '${{ toJson(github.event.client_payload) }}'
           echo "Page ID: ${{ github.event.client_payload.page_id }}"
-          echo "Page Name: ${{ github.event.client_payload.page_name }}"
+          echo "Page name: ${{ github.event.client_payload.page_name }}"
+          echo "Version: ${{ github.event.client_payload.version }}"
+          echo "Platform: ${{ github.event.client_payload.platform }}"
 
       - name: Install Playwright Chromium
         run: |
@@ -31,12 +34,22 @@ jobs:
           notion_token: ${{ secrets.NOTION_TOKEN }}
           page_id: "${{ github.event.client_payload.page_id }}"
           page_name: "${{ github.event.client_payload.page_name }}"
-   
+
       - name: Upload release notes PDF to artifact
         uses: actions/upload-artifact@v6.0.0
         with:
           name: release-notes-pdf
           path: ${{ steps.convert-notion-page.outputs.pdf_path }}
+
+      - name: Upload release notes to Google Drive
+        id: upload-to-drive
+        uses: sitoo/mobile-shared-cicd/actions/upload-to-google-drive@main
+        with:
+          file-path: ${{ steps.convert-notion-page.outputs.pdf_path }}
+          gcp-project-number: ${{ vars.ANDROID_GCP_PROJECT_NUMBER }}
+          service-account: drive-ci@sitoo-pos-android.iam.gserviceaccount.com
+          folder-id: ${{ vars.ANDROID_GOOGLE_DRIVE_RELEASES_FOLDER_ID }}
+          subfolder: ${{ github.event.client_payload.version || github.event.client_payload.page_name }}
 
       - name: Upload PDF to Slack
         uses: sitoo/mobile-shared-cicd/actions/slack-upload-file@main
@@ -46,4 +59,3 @@ jobs:
           file_path: ${{ steps.convert-notion-page.outputs.pdf_path }}
           file_name: ${{ steps.convert-notion-page.outputs.pdf_file_name }}
           initial_comment: PDF attached for ${{ steps.convert-notion-page.outputs.page_title }}
-        
