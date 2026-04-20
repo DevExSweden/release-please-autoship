@@ -4,13 +4,23 @@ on:
   workflow_call:
     inputs:
       current_tag:
-        description: "Current release tag (optional)"
+        description: "Current release tag (optional). If omitted, version is read from version-file-path."
         required: false
         type: string
       previous_tag:
         description: "Previous release tag (optional)"
         required: false
         type: string
+      version-file-path:
+        description: "Path to the JSON manifest file used to extract the version when current_tag is not provided"
+        required: false
+        type: string
+        default: ".github/release-please/manifest.json"
+      version-key:
+        description: "JSON key to extract from the manifest file (e.g. '.')"
+        required: false
+        type: string
+        default: "."
       platform:
         description: "Platform (iOS or Android)"
         required: true
@@ -31,6 +41,8 @@ permissions:
 jobs:
   generate-release-notes:
     runs-on: ubuntu-latest
+    outputs:
+      trimmed-version: ${{ steps.trim_version.outputs.trimmedVersion }}
     strategy:
       matrix:
         target:
@@ -47,8 +59,8 @@ jobs:
       - uses: sitoo/mobile-shared-cicd/actions/release@main
         id: release_notes
         with:
-          current-tag: ${{ needs.determine-tags.outputs.current_tag }}
-          previous-tag: ${{ needs.determine-tags.outputs.previous_tag }}
+          current-tag: ${{ inputs.current_tag }}
+          previous-tag: ${{ inputs.previous_tag }}
           target-name: ${{ matrix.target.name }}
           github-token: ${{ secrets.COPILOT_CI_PAT }}
           artifact-name: ${{ matrix.target.artifact-name }}
@@ -80,18 +92,25 @@ jobs:
         with:
           markdown_path: ${{ steps.read_notes.outputs.file }}
 
-      - name: Trim version (drop v/suffix)
+      - name: Extract version from manifest
+        id: extract_version
+        if: inputs.current_tag == '' && inputs.version-file-path != ''
+        uses: sitoo/mobile-shared-cicd/actions/extract-version@main
+        with:
+          file-path: ${{ inputs.version-file-path }}
+          key: ${{ inputs.version-key }}
+
+      - name: Resolve version
         id: trim_version
         shell: bash
         run: |
           set -euo pipefail
-          raw='${{ needs.determine-tags.outputs.current_tag }}'
+          raw='${{ inputs.current_tag != '' && inputs.current_tag || steps.extract_version.outputs.version }}'
           if [[ "$raw" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            trimmed="${BASH_REMATCH[1]}"
+            echo "trimmedVersion=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           else
-            trimmed="$raw"
+            echo "trimmedVersion=$raw" >> "$GITHUB_OUTPUT"
           fi
-          echo "trimmed=$trimmed" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Notion DB
         uses: sitoo/mobile-shared-cicd/actions/publish-to-notion-db@main
@@ -99,7 +118,7 @@ jobs:
           notion_token: ${{ secrets.NOTION_RELEASE_API_TOKEN }}
           notion_database_id: ${{ secrets.NOTION_RELEASE_NOTES_DB }}
           title_property_name: "Name"
-          title: "${{ steps.trim_version.outputs.trimmed }} Release Notes"
+          title: "${{ steps.trim_version.outputs.trimmedVersion }} Release Notes"
 
           properties_json: >
             {
@@ -107,7 +126,7 @@ jobs:
                 "rich_text": [
                   {
                     "type": "text",
-                    "text": { "content": "${{ steps.trim_version.outputs.trimmed }}" }
+                    "text": { "content": "${{ steps.trim_version.outputs.trimmedVersion }}" }
                   }
                 ]
               },
@@ -173,7 +192,7 @@ jobs:
                   {
                     "type": "section",
                     "fields": [
-                      { "type": "mrkdwn", "text": "*Version:*\n`${{ needs.determine-tags.outputs.current_tag }}`" },
+                      { "type": "mrkdwn", "text": "*Version:*\n`${{ needs.generate-release-notes.outputs.trimmed-version }}`" },
                       { "type": "mrkdwn", "text": "*Platform:*\n`${{ inputs.platform }}`" },
                       { "type": "mrkdwn", "text": "*Repository:*\n`${{ github.repository }}`" },
                       { "type": "mrkdwn", "text": "*Notion:*\n<${{ vars.RELEASE_NOTES_URL }}|View Release Notes>" }
@@ -204,7 +223,7 @@ jobs:
           payload: |
             {
                 "channel": "${{ vars.RELEASE_NOTES_SLACK_CHANNEL }}",
-                "text": ":x: Release Notes generation failed for ${{ needs.determine-tags.outputs.current_tag }}",
+                "text": ":x: Release Notes generation failed for ${{ needs.generate-release-notes.outputs.trimmed-version }}",
                 "blocks": [
                   {
                     "type": "section",
@@ -216,7 +235,7 @@ jobs:
                   {
                     "type": "section",
                     "fields": [
-                      { "type": "mrkdwn", "text": "*Version:*\n`${{ needs.determine-tags.outputs.current_tag }}`" },
+                      { "type": "mrkdwn", "text": "*Version:*\n`${{ needs.generate-release-notes.outputs.trimmed-version }}`" },
                       { "type": "mrkdwn", "text": "*Platform:*\n`${{ inputs.platform }}`" },
                       { "type": "mrkdwn", "text": "*Repository:*\n`${{ github.repository }}`" },
                       { "type": "mrkdwn", "text": "*Status:*\n:warning: Failed" }
