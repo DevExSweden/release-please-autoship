@@ -52,20 +52,59 @@ runs:
         app-id: ${{ inputs.github-app-id }}
         private-key: ${{ inputs.github-app-private-key }}
 
-    - name: Inject release-as into config (manifest mode workaround)
+    - name: Create version bump PR
+      id: hotfix-pr
       if: ${{ inputs.release-as != '' }}
       shell: bash
       env:
-        RELEASE_AS: ${{ inputs.release-as }}
-        CONFIG_FILE: ${{ inputs.config-file }}
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
       run: |
-        # release-please-action v4 ignores the top-level release-as input in manifest mode.
-        # Injecting it into each package entry in the config file is the supported workaround.
-        jq --arg v "$RELEASE_AS" '.packages |= with_entries(.value["release-as"] = $v)' \
-          "$CONFIG_FILE" > /tmp/rp-config-patched.json
-        mv /tmp/rp-config-patched.json "$CONFIG_FILE"
+        BRANCH="release-please--branches--${{ inputs.target-branch }}"
+
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        git fetch origin ${{ inputs.target-branch }}
+        git checkout -b $BRANCH origin/${{ inputs.target-branch }}
+
+        # Update manifest.json
+        jq '.["."] = "${{ inputs.release-as }}"' ${{ inputs.manifest-file }} > tmp.json
+        mv tmp.json ${{ inputs.manifest-file }}
+
+        # Update extra-files with x-release-please-version marker
+        jq -r '.packages["."]["extra-files"][]? | if type == "object" then .path else . end' ${{ inputs.config-file }} | while read -r file_path; do
+          if [ -f "$file_path" ]; then
+            sed -i "s/[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\( .*x-release-please-version\)/${{ inputs.release-as }}\1/" "$file_path"
+          fi
+        done
+
+        if git diff --quiet; then
+          echo "No changes — files already at ${{ inputs.release-as }}, skipping PR creation."
+          exit 0
+        fi
+
+        git commit -am "chore(release): release ${{ inputs.release-as }}"
+        git push origin $BRANCH
+
+        PR_NUMBER=$(gh pr create \
+          --base ${{ inputs.target-branch }} \
+          --head $BRANCH \
+          --title "chore(release): release ${{ inputs.release-as }}" \
+          --body "Release ${{ inputs.release-as }}" \
+          --json number \
+          --jq '.number')
+
+        echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+    - name: Auto-merge hotfix PR
+      if: ${{ inputs.release-as != '' && steps.hotfix-pr.outputs.number != '' }}
+      uses: sitoo/mobile-shared-cicd/actions/auto-merge-pr@release_as_clean
+      with:
+        pr-number: ${{ steps.hotfix-pr.outputs.number }}
+        github-app-token: ${{ steps.app-token.outputs.token }}
 
     - name: Run Release Please
+      if: ${{ inputs.release-as == '' }}
       id: release
       uses: googleapis/release-please-action@v4.4.0
       with:
