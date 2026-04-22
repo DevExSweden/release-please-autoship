@@ -102,7 +102,7 @@ jobs:
 
       - name: Auto-merge version bump PR
         if: ${{ steps.bump-pr.outputs.number != '' }}
-        uses: sitoo/mobile-shared-cicd/actions/auto-merge-pr@main
+        uses: sitoo/mobile-shared-cicd/actions/approve-and-merge-pr@main
         with:
           pr-number: ${{ steps.bump-pr.outputs.number }}
           github-app-token: ${{ steps.app-token.outputs.token }}

@@ -1,4 +1,4 @@
-name: "Auto-merge PR"
+name: "Approve and Merge PR"
 description: "Approve and auto-merge a pull request using dual-identity pattern (App token creates/merges, GITHUB_TOKEN approves)"
 
 inputs:
