@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - name: Detect changes in Node.js actions
         id: changes
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d
         with:
           filters: |
             markdown_to_notion:
@@ -34,7 +34,7 @@ jobs:
           steps.changes.outputs.publish_to_notion_db == 'true' ||
           steps.changes.outputs.notion_to_pdf == 'true' ||
           steps.changes.outputs.slack_upload_file == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm

@@ -63,13 +63,13 @@ jobs:
       - name: Generate GitHub App token
         id: app-token
         if: inputs.gh-app-id != ''
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ inputs.gh-app-id }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token || github.token }}
