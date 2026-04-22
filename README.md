@@ -49,7 +49,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Run Release Please and auto-merge
-        uses: GulerSevil/release-please-autoship@main
+        uses: DevExSweden/release-please-autoship@main
         with:
           target-branch: main
           github-app-id: ${{ secrets.RELEASE_APP_ID }}
@@ -60,7 +60,7 @@ jobs:
 
 ```yaml
       - name: Run Release Please and auto-merge
-        uses: GulerSevil/release-please-autoship@main
+        uses: DevExSweden/release-please-autoship@main
         with:
           target-branch: main
           config-file: .github/release-please-config.json
@@ -73,7 +73,7 @@ jobs:
 
 ```yaml
       - name: Run Release Please and auto-merge
-        uses: GulerSevil/release-please-autoship@main
+        uses: DevExSweden/release-please-autoship@main
         with:
           target-branch: main
           skip-github-release: "false"
@@ -86,7 +86,7 @@ jobs:
 ```yaml
       - name: Run Release Please and auto-merge
         id: rp
-        uses: GulerSevil/release-please-autoship@main
+        uses: DevExSweden/release-please-autoship@main
         with:
           target-branch: main
           github-app-id: ${{ secrets.RELEASE_APP_ID }}
