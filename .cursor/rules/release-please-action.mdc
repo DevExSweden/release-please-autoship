@@ -1,0 +1,78 @@
+---
+description: Reference for googleapis/release-please-action — inputs, outputs, and configuration patterns
+alwaysApply: false
+globs: "**/release-please*/**,**/_reusable_release_please*"
+---
+
+# googleapis/release-please-action
+
+Automates CHANGELOG generation, GitHub releases, and version bumps by parsing Conventional Commit messages and maintaining a Release PR.
+
+## How it works
+
+- Scans git history for Conventional Commit messages since the last release
+- Keeps a **Release PR** open and up-to-date with the changelog and version bump
+- Merges the PR → creates the GitHub release and tag
+- `fix:` → patch bump, `feat:` → minor bump, `feat!:` / `fix!:` → major bump
+
+## Key inputs
+
+| Input | Default | Notes |
+|-------|---------|-------|
+| `token` | `GITHUB_TOKEN` | Use a PAT or App token so triggered workflows run |
+| `release-type` | — | Simple strategy (e.g. `simple`, `node`). Omit when using manifest config |
+| `target-branch` | auto-detected | Branch to open the release PR against |
+| `config-file` | `release-please-config.json` | Path to manifest config |
+| `manifest-file` | `.release-please-manifest.json` | Path to versions manifest |
+| `skip-github-release` | `false` | Set `true` to only create the PR, skip tagging |
+| `skip-github-pull-request` | `false` | Set `true` to only tag, skip the PR |
+| `skip-labeling` | `false` | Skip adding labels to the release PR |
+| `release-as` | — | Force a specific version for the next release |
+
+## Key outputs
+
+| Output | Description |
+|--------|-------------|
+| `prs_created` | `true` if a release PR was created or updated |
+| `pr` | JSON of the PullRequest object |
+| `releases_created` | `true` if any release was created |
+| `release_created` | `true` for the root component release |
+| `version` | Full semver value (e.g. `1.2.3`) |
+| `major` / `minor` / `patch` | Individual semver components |
+| `tag_name` | The created release tag |
+| `sha` | SHA the release was tagged at |
+
+For monorepos with `path`, outputs are prefixed: `<path>--release_created`, `<path>--version`, etc.
+
+## Required workflow permissions
+
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+```
+
+## Advanced config (manifest mode)
+
+Omit `release-type` and provide config/manifest files instead:
+
+```yaml
+- uses: googleapis/release-please-action@v4
+  with:
+    token: ${{ secrets.MY_TOKEN }}
+    config-file: .github/release-please-config.json
+    manifest-file: .github/.release-please-manifest.json
+```
+
+## Important: GITHUB_TOKEN limitation
+
+Resources created by release-please (tags, PRs) **will not trigger** other GitHub Actions workflows when using the default `GITHUB_TOKEN`. Use a PAT or GitHub App token if downstream workflows need to run on release events.
+
+## v3 → v4 migration
+
+| Old `command` | v4 equivalent |
+|---------------|---------------|
+| `github-release` | `skip-github-pull-request: true` |
+| `release-pr` | `skip-github-release: true` |
+| `manifest` | omit `release-type` |
+| `manifest-pr` | `skip-github-release: true` + omit `release-type` |

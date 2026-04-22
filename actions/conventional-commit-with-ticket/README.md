@@ -1,4 +1,4 @@
-## Conventional Commit (Composite Action)
+## Conventional Commit with Ticket (Composite Action)
 
 Validate pull request titles against the Conventional Commits specification with centrally managed rules.
 
@@ -14,20 +14,23 @@ The idea is to manage the rules from one place. By keeping the allowed types and
 ### Rules enforced
 - **Allowed types**: `feat`, `fix`, `docs`, `test`, `ci`, `refactor`, `perf`, `chore`, `revert`, `security`, `wip`
 - **Ticket key requirement**:
-  - Required for types: `feat`, `fix`, `perf`, `security`, `refactor`
-  - Not required for: `docs`, `test`, `chore`, `wip`, `revert`, `ci`, others
-  - Pattern: `(POSS|PS|BUGS|COM|PROM|APPE)-\d{2,5}`
-  - Examples: `POSS-123`, `PS-42`, `BUGS-9999`, `COM-77`, `PROM-200`
+  - Controlled by the `ticket-key-pattern` input — if not set, ticket validation is skipped entirely.
+  - When set, a matching ticket key is required for the types listed in `ticket-required-types` (default: `feat`, `fix`, `perf`, `security`, `refactor`).
 - **Labels on success**:
   - Adds a type label (e.g., `feat` → `feature`, `perf` → `performance`, `wip` → `WIP`)
   - Adds a scope label when a scope is present in the title
 
 ### Inputs
-- `app-token` (required): GitHub App installation token used for validation and PR interactions (labels/comments).  
-  - Recommended: Generate via `actions/create-github-app-token@v1` with `pull-requests: write` and `contents: read` permissions.
+
+| Name | Required | Default | Description |
+|------|----------|---------|-------------|
+| `app-token` | **yes** | — | GitHub App installation token for PR interactions (labels/comments). Needs `pull-requests: write`. |
+| `ticket-key-pattern` | no | _(empty)_ | Regex pattern a ticket key must match (e.g. `(PROJ\|TEAM)-[0-9]{2,5}`). When omitted, ticket validation is skipped. |
+| `require-ticket-for-types` | no | `feat,fix,perf,security,refactor` | Comma-separated commit types that require a ticket key. Only used when `ticket-key-pattern` is set. |
 
 ### Usage
-Add a job step in your workflow to invoke this action:
+
+#### Without ticket key validation
 
 ```yaml
 name: Conventional Commit Check
@@ -48,9 +51,20 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Validate conventional commits
-        uses: sitoo/mobile-shared-cicd/actions/conventional-commit@main
+        uses: DevExSweden/conventional-commit-with-ticket@main
         with:
           app-token: ${{ steps.app-token.outputs.token }}
+```
+
+#### With ticket key validation
+
+```yaml
+      - name: Validate conventional commits
+        uses: DevExSweden/conventional-commit-with-ticket@main
+        with:
+          app-token: ${{ steps.app-token.outputs.token }}
+          ticket-key-pattern: "(PROJ|TEAM)-[0-9]{2,5}"
+          require-ticket-for-types: "feat,fix,perf,security,refactor"
 ```
 
 ### Outputs

@@ -1,9 +1,21 @@
-name: Conventional Commit
-description: Validate a commit message against the Conventional Commit specification.
+name: Conventional Commit with Ticket
+description: Validate PR titles against Conventional Commits and optionally enforce a ticket key.
 inputs:
   app-token:
     description: The token to use to create the comment and label the PR.
     required: true
+  ticket-key-pattern:
+    description: >
+      Regex pattern a ticket key must match (e.g. `(PROJ|TEAM)-[0-9]{2,5}`).
+      When omitted, ticket key validation is skipped entirely.
+    required: false
+    default: ""
+  require-ticket-for-types:
+    description: >
+      Comma-separated list of commit types that require a ticket key.
+      Only used when ticket-key-pattern is set.
+    required: false
+    default: "feat,fix,perf,security,refactor"
 runs:
   using: 'composite'
   steps:
@@ -26,6 +38,8 @@ runs:
       shell: bash
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
+        TICKET_KEY_PATTERN: ${{ inputs.ticket-key-pattern }}
+        REQUIRE_TICKET_FOR_TYPES: ${{ inputs.require-ticket-for-types }}
       run: |
         bash ${GITHUB_ACTION_PATH}/scripts/enforce_ticket_key.sh "${{ github.event.pull_request.title }}"
         
@@ -39,7 +53,10 @@ runs:
           echo "Please update the PR title to follow Conventional Commits."
           echo
           echo "- Allowed types: feat, fix, docs, test, ci, refactor, perf, chore, revert, security, wip"
-          echo "- Ticket key (when required) must match: \`(POSS|PS|BUGS|COM|PROM|APPE)-\\d{2,5}\`"
+          if [[ -n "${{ inputs.ticket-key-pattern }}" ]]; then
+            echo "- Ticket key is required for: ${{ inputs.require-ticket-for-types }}"
+            echo "- Ticket key must match pattern: \`${{ inputs.ticket-key-pattern }}\`"
+          fi
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Fail job when validation fails

@@ -22,7 +22,7 @@ Approve and automatically merge a pull request using a dual-identity pattern: th
 
 ```yaml
 - name: Auto-merge PR
-  uses: GulerSevil/approve-and-merge-pr@main
+  uses: DevExSweden/approve-and-merge-pr@main
   with:
     pr-number: 42
     github-app-token: ${{ steps.app-token.outputs.token }}
@@ -32,7 +32,7 @@ Approve and automatically merge a pull request using a dual-identity pattern: th
 
 ```yaml
 - name: Auto-merge PR
-  uses: GulerSevil/approve-and-merge-pr@main
+  uses: DevExSweden/approve-and-merge-pr@main
   with:
     pr-number: 42
     github-app-token: ${{ steps.app-token.outputs.token }}
@@ -43,7 +43,7 @@ Approve and automatically merge a pull request using a dual-identity pattern: th
 
 ```yaml
 - name: Auto-merge PR
-  uses: GulerSevil/approve-and-merge-pr@main
+  uses: DevExSweden/approve-and-merge-pr@main
   with:
     pr-number: 42
     github-app-token: ${{ steps.app-token.outputs.token }}
