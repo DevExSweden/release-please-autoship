@@ -22,9 +22,9 @@ Approve and automatically merge a pull request using a dual-identity pattern: th
 
 ```yaml
 - name: Auto-merge PR
-  uses: DevExSweden/approve-and-merge-pr@main
+  uses: DevExSweden/approve-and-merge-pr@v1.0.0
   with:
-    pr-number: 42
+    pr-number: ${{ steps.release-please.outputs.pr_number }}
     github-app-token: ${{ steps.app-token.outputs.token }}
 ```
 
@@ -32,9 +32,9 @@ Approve and automatically merge a pull request using a dual-identity pattern: th
 
 ```yaml
 - name: Auto-merge PR
-  uses: DevExSweden/approve-and-merge-pr@main
+  uses: DevExSweden/approve-and-merge-pr@v1.0.0
   with:
-    pr-number: 42
+    pr-number: ${{ steps.release-please.outputs.pr_number }}
     github-app-token: ${{ steps.app-token.outputs.token }}
     delete-branch: "false"
 ```
@@ -43,9 +43,9 @@ Approve and automatically merge a pull request using a dual-identity pattern: th
 
 ```yaml
 - name: Auto-merge PR
-  uses: DevExSweden/approve-and-merge-pr@main
+  uses: DevExSweden/approve-and-merge-pr@v1.0.0
   with:
-    pr-number: 42
+    pr-number: ${{ steps.release-please.outputs.pr_number }}
     github-app-token: ${{ steps.app-token.outputs.token }}
     merge-method: rebase
 ```
