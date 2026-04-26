@@ -25,11 +25,7 @@ runs:
       uses: ytanikin/pr-conventional-commits@b628c5a234cc32513014b7bfdd1e47b532124d98
       with:
         task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert","security","wip"]'
-        custom_labels: >-
-          {"feat": "feature", "fix": "fix", "docs": "documentation",
-           "test": "test", "ci": "CI/CD", "refactor": "refactor",
-           "perf": "performance", "chore": "chore", "revert": "revert",
-           "wip": "WIP"}
+        add_label: 'false'
         token: ${{ inputs.app-token }}
 
     - name: Enforce Ticket Key
@@ -44,7 +40,7 @@ runs:
         bash ${GITHUB_ACTION_PATH}/scripts/enforce_ticket_key.sh "${{ github.event.pull_request.title }}"
         
     - name: Report Conventional Commit failure
-      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outputs.task_type == ''
+      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outcome == 'failure'
       shell: bash
       run: |
         {
@@ -61,7 +57,7 @@ runs:
 
     - name: Fail job when validation fails
       shell: bash
-      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outputs.task_type == ''
+      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outcome == 'failure'
       run: |
         echo "Failing job because Conventional Commit or ticket validation failed."
         exit 1
