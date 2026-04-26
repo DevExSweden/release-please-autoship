@@ -45,13 +45,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
       - name: Create GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v2.2.0
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ inputs.pos-release-bot-app-id }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}

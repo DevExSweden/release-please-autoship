@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - name: Detect changes in Python actions
         id: changes
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d
         with:
           filters: |
             email_release_notification:
@@ -28,7 +28,7 @@ jobs:
         if: |
           steps.changes.outputs.email_release_notification == 'true' ||
           steps.changes.outputs.upload_to_google_drive == 'true'
-        uses: astral-sh/setup-uv@c0b7f63f921ff91255da381cfafb949f89803448
+        uses: astral-sh/setup-uv@c0c76fcf76c37099e6a452584d04b015240faefc
         with:
           python-version: "3.11"
 

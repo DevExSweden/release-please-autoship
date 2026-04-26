@@ -70,7 +70,7 @@ jobs:
         run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Download the release artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.target.artifact-name }}
           path: ./release-notes/
@@ -173,7 +173,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack with release notes link
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           method: chat.postMessage
           token: ${{ secrets.POS_RELEASE_BOT_TOKEN }}
@@ -216,7 +216,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           method: chat.postMessage
           token: ${{ secrets.POS_RELEASE_BOT_TOKEN }}

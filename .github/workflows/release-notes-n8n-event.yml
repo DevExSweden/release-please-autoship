@@ -36,7 +36,7 @@ jobs:
           page_name: "${{ github.event.client_payload.page_name }}"
 
       - name: Upload release notes PDF to artifact
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: release-notes-pdf
           path: ${{ steps.convert-notion-page.outputs.pdf_path }}
