@@ -44,7 +44,7 @@ runs:
         bash ${GITHUB_ACTION_PATH}/scripts/enforce_ticket_key.sh "${{ github.event.pull_request.title }}"
         
     - name: Report Conventional Commit failure
-      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outcome == 'failure'
+      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outputs.task_type == ''
       shell: bash
       run: |
         {
@@ -61,7 +61,7 @@ runs:
 
     - name: Fail job when validation fails
       shell: bash
-      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outcome == 'failure'
+      if: steps.enforce-ticket-key.outcome == 'failure' || steps.validate.outputs.task_type == ''
       run: |
         echo "Failing job because Conventional Commit or ticket validation failed."
         exit 1

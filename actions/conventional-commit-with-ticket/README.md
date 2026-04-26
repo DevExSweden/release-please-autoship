@@ -43,17 +43,10 @@ jobs:
   conventional-commit:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
       - name: Validate conventional commits
         uses: DevExSweden/conventional-commit-with-ticket@main
         with:
-          app-token: ${{ steps.app-token.outputs.token }}
+          app-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### With ticket key validation
